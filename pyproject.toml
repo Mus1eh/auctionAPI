@@ -1,0 +1,35 @@
+[project]
+name = "auctionapi"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Mus1eh", email = "osamamusleh2003@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "bcrypt>=5.0.0",
+    "email-validator>=2.3.0",
+    "fastapi>=0.150.0",
+    "passlib[bcrypt]>=1.7.4",
+    "psycopg>=3.3.6",
+    "psycopg2-binary>=2.9.13",
+    "pwdlib[argon2]>=0.3.1",
+    "pydantic>=2.14.1",
+    "pydantic-settings>=2.16.0",
+    "python-dotenv>=1.2.4",
+    "python-jose[cryptography]>=3.5.0",
+    "python-multipart>=0.0.32",
+    "sqlalchemy>=2.1.5",
+    "uvicorn[standard]>=0.54.0",
+]
+
+[project.scripts]
+auctionapi = "auctionapi:main"
+
+[build-system]
+requires = ["uv_build>=0.12.23,<0.13.0"]
+build-backend = "uv_build"
+
+[tool.ruff.lint]
+ignore=["B008"]
