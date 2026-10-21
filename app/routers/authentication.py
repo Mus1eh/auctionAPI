@@ -30,11 +30,6 @@ def login(
         )
         .first()
     )
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User no longer exists",
-        )
 
     credential_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -64,6 +59,12 @@ def refresh_token(request: schemas.RefreshTokenRequest, db: Session = Depends(ge
     db_token = verify_refresh_token(db, request.refresh_token)
 
     user = db.query(models.User).filter(models.User.id == db_token.user_id).first()
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="user no longer exists",
+        )
 
     result = db.execute(
         update(models.RefreshToken)
@@ -292,3 +293,12 @@ def logout_all_session(
         "message": "All sessions have been logged out successfully",
         "count": result.rowcount,
     }
+
+
+# takes the reset-password token and verifies it if it's valid or not
+# validates token in the frontend before sending the user to the reset-password pagfe
+# if the token is invalid, the user will be redirected to the forgot-password page or gives an error message
+@router.post("/verify-token")
+def verify_token(request: schemas.ResetPasswordToken, db: Session = Depends(get_db)):
+    db_token = verify_password_reset_token(db, request.reset_token)
+    return db_token

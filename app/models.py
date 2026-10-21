@@ -1,7 +1,9 @@
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, func
+from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.orm import relationship
 
 from app.database import Base
+from app.enums import ApprovalStatus, ProductStatus
 
 
 class User(Base):
@@ -18,6 +20,7 @@ class User(Base):
 
     role = relationship("Role", back_populates="users")
     role_name = Column(String(50), ForeignKey("roles.name"))
+    bids = relationship("Bids", back_populates="bidder", cascade="all, delete-orphan")
 
 
 class Product(Base):
@@ -28,10 +31,25 @@ class Product(Base):
     description = Column(String(200))
     start_price = Column(Integer, nullable=False)
 
-    owner = relationship("User", back_populates="products")
     owner_id = Column(
         Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
+    owner = relationship("User", back_populates="products")
+    status = Column(
+        SQLEnum(
+            ProductStatus,
+            name="product_status",
+            values_callable=lambda enum_class: [item.value for item in enum_class],
+        ),
+        nullable=False,
+        default=ProductStatus.DRAFT,
+    )
+    status_requests = relationship(
+        "ProductStatusRequest", back_populates="product", cascade="all, delete-orphan"
+    )
+    bids = relationship("Bids", back_populates="product", cascade="all, delete-orphan")
+    auction_started_at = Column(DateTime(timezone=True), nullable=True)
+    auction_ends_at = Column(DateTime(timezone=True), nullable=True)
 
 
 class Role(Base):
@@ -61,3 +79,56 @@ class PasswordResetToken(Base):
     token_hash = Column(String(64), unique=True, nullable=False)
     expires_at = Column(DateTime(timezone=True), nullable=False)
     used_at = Column(DateTime(timezone=True), nullable=True)
+
+
+class ProductStatusRequest(Base):
+    __tablename__ = "product_status_requests"
+
+    id = Column(Integer, primary_key=True, index=True)
+    product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
+    requested_by = Column(Integer, ForeignKey("users.id"), nullable=False)
+    requested_status = Column(
+        SQLEnum(
+            ProductStatus,
+            values_callable=lambda enum_class: [item.value for item in enum_class],
+        ),
+        nullable=False,
+    )
+
+    approval_status = Column(
+        SQLEnum(
+            ApprovalStatus,
+            name="approval_status",
+            values_callable=lambda enum_class: [item.value for item in enum_class],
+        ),
+        nullable=False,
+        default=ApprovalStatus.PENDING,
+    )
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    reviewed_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    reviewed_at = Column(DateTime(timezone=True), nullable=True)
+    product = relationship("Product", back_populates="status_requests")
+
+
+class Bids(Base):
+    __tablename__ = "bids"
+
+    id = Column(Integer, primary_key=True, index=True)
+    product_id = Column(
+        Integer,
+        ForeignKey("products.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    amount = Column(Integer, nullable=False)
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    product = relationship("Product", back_populates="bids")
+    bidder = relationship("User", back_populates="bids")

@@ -11,6 +11,11 @@ SMTP_PORT = int(os.environ["SMTP_PORT"])
 SMTP_USERNAME = os.environ["SMTP_USERNAME"]
 SMTP_PASSWORD = os.environ["SMTP_PASSWORD"]
 SMTP_FROM_EMAIL = os.environ["SMTP_FROM_EMAIL"]
+FRONTEND_URL = os.environ["FRONTEND_URL"]
+
+
+def generate_link(reset_token: str) -> str:
+    return f"{FRONTEND_URL}/reset-password?token={reset_token}"
 
 
 def send_password_reset_email(to_email: str, reset_token: str):
@@ -28,7 +33,7 @@ def send_password_reset_email(to_email: str, reset_token: str):
 
     Your password reset token is: 
 
-    {reset_token}
+    {generate_link(reset_token)}
 
     This token will expire in 15 minutes.
 

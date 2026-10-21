@@ -1,4 +1,8 @@
+from datetime import datetime
+
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
+
+from app.enums import ApprovalStatus, ProductStatus
 
 
 class UserCreate(BaseModel):
@@ -27,8 +31,13 @@ class ProductShow(BaseModel):
     description: str | None = None
     start_price: int
     owner_id: int
+    status: ProductStatus
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class GetProductByStatus(BaseModel):
+    status: ProductStatus
 
 
 class ProductPatch(BaseModel):
@@ -79,6 +88,27 @@ class ResetPasswordRequest(BaseModel):
     new_password: str = Field(min_length=8)
 
 
+class ResetPasswordToken(BaseModel):
+    reset_token: str
+
+
 class ChangePasswordRequest(BaseModel):
     current_password: str
     new_password: str = Field(min_length=8)
+
+
+class ProductStatusUpdate(BaseModel):
+    status: ProductStatus
+
+
+class ProductStatusRequestShow(BaseModel):
+    id: int
+    product_id: int
+    requested_by: int
+    requested_status: ProductStatus
+    approval_status: ApprovalStatus
+    created_at: datetime
+    reviewed_at: datetime | None = None
+    reviewed_by: int | None = None
+
+    model_config = ConfigDict(from_attributes=True)
