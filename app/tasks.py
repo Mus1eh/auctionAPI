@@ -9,7 +9,6 @@ from app.enums import ProductStatus
 @celery_app.task(name="app.tasks.close_expired_auctions")
 def close_expired_auctions():
     db = sessionLocal()
-
     try:
         now = datetime.now(UTC)
 
@@ -22,7 +21,7 @@ def close_expired_auctions():
             .with_for_update(skip_locked=True)
             .all()
         )
-        # using skip_locked to avoid waiting for locks held by other transactions useful in multi-worker environments
+
         for product in expired_auctions:
             product.status = ProductStatus.CLOSED
 
@@ -31,11 +30,10 @@ def close_expired_auctions():
         db.commit()
 
         return {
-            "Closed auctions": closed_count,
+            "Closed Auctions": closed_count,
         }
     except Exception:
         db.rollback()
         raise
-
     finally:
         db.close()

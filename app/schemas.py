@@ -30,8 +30,12 @@ class ProductShow(BaseModel):
     name: str
     description: str | None = None
     start_price: int
+    current_price: int
     owner_id: int
     status: ProductStatus
+
+    auction_started_at: datetime | None = None
+    auction_ends_at: datetime | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -110,5 +114,19 @@ class ProductStatusRequestShow(BaseModel):
     created_at: datetime
     reviewed_at: datetime | None = None
     reviewed_by: int | None = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class BidCreate(BaseModel):
+    amount: int = Field(gt=0)
+
+
+class BidShow(BaseModel):
+    id: int
+    product_id: int
+    user_id: int
+    amount: int
+    created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)

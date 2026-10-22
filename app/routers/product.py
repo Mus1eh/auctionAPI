@@ -22,7 +22,11 @@ def create_product(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    new_product = models.Product(**request.model_dump(), owner_id=current_user.id)
+    new_product = models.Product(
+        **request.model_dump(),
+        owner_id=current_user.id,
+        current_price=request.start_price,
+    )
     db.add(new_product)
     db.commit()
     db.refresh(new_product)
@@ -30,7 +34,9 @@ def create_product(
 
 
 # GET MY PRODUCTS
-@router.get("/my", response_model=list[schemas.ProductShow])
+@router.get(
+    "/my", response_model=list[schemas.ProductShow], response_models_exclude_none=True
+)
 def get_my_products(
     db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)
 ):
@@ -48,7 +54,11 @@ def get_my_products(
 
 # GET ALL PRODUCTS BY STATUS IT'S BETTER THAN TO GET ALL PRODUCTS AT ONCE SO THE DATABASE CAN HANDLE
 # AND FRONT END CAN HANDLE IT BETTER AND ALSO WE CAN ADD PAGINATION LATER ON
-@router.get("/{status}", response_model=list[schemas.ProductShow])
+@router.get(
+    "/{status}",
+    response_model=list[schemas.ProductShow],
+    response_models_exclude_none=True,
+)
 def get_products(stat: ProductStatus, db: Session = Depends(get_db)):
     products = db.query(models.Product).filter(models.Product.status == stat).all()
     if not products:
@@ -59,7 +69,9 @@ def get_products(stat: ProductStatus, db: Session = Depends(get_db)):
 
 
 # GET PRODUCT BY ID
-@router.get("/{id}", response_model=schemas.ProductShow)
+@router.get(
+    "/{id}", response_model=schemas.ProductShow, response_models_exclude_none=True
+)
 def get_product(id: int, db: Session = Depends(get_db)):
     product = db.query(models.Product).filter(models.Product.id == id).first()
     if not product:

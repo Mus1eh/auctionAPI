@@ -30,6 +30,10 @@ class Product(Base):
     name = Column(String(50), nullable=False)
     description = Column(String(200))
     start_price = Column(Integer, nullable=False)
+    current_price = Column(
+        Integer,
+        nullable=False,
+    )
 
     owner_id = Column(
         Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
