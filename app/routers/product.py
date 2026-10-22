@@ -145,7 +145,7 @@ def delete_product(
     require_product_owner_or_admin(product, current_user)
     db.delete(product)
     db.commit()
-    return {"detail": "Product deleted successfully."}
+    return {"detail": "Product z successfully."}
 
 
 @router.post(
