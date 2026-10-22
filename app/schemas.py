@@ -119,7 +119,7 @@ class ProductStatusRequestShow(BaseModel):
 
 
 class BidCreate(BaseModel):
-    amount: int = Field(gt=0)
+    increment: int = Field(gt=0)
 
 
 class BidShow(BaseModel):

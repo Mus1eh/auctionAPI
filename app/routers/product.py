@@ -15,7 +15,10 @@ router = APIRouter(
 
 # CREATE PRODUCT
 @router.post(
-    "/", response_model=schemas.ProductShow, status_code=status.HTTP_201_CREATED
+    "/",
+    response_model=schemas.ProductShow,
+    status_code=status.HTTP_201_CREATED,
+    response_model_exclude_none=True,
 )
 def create_product(
     request: schemas.ProductCreate,
@@ -35,7 +38,7 @@ def create_product(
 
 # GET MY PRODUCTS
 @router.get(
-    "/my", response_model=list[schemas.ProductShow], response_models_exclude_none=True
+    "/my", response_model=list[schemas.ProductShow], response_model_exclude_none=True
 )
 def get_my_products(
     db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)
@@ -57,7 +60,7 @@ def get_my_products(
 @router.get(
     "/{status}",
     response_model=list[schemas.ProductShow],
-    response_models_exclude_none=True,
+    response_model_exclude_none=True,
 )
 def get_products(stat: ProductStatus, db: Session = Depends(get_db)):
     products = db.query(models.Product).filter(models.Product.status == stat).all()
@@ -70,7 +73,7 @@ def get_products(stat: ProductStatus, db: Session = Depends(get_db)):
 
 # GET PRODUCT BY ID
 @router.get(
-    "/{id}", response_model=schemas.ProductShow, response_models_exclude_none=True
+    "/{id}", response_model=schemas.ProductShow, response_model_exclude_none=True
 )
 def get_product(id: int, db: Session = Depends(get_db)):
     product = db.query(models.Product).filter(models.Product.id == id).first()
