@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app import models, schemas
 from app.database import get_db
-from app.enums import ProductStatus
+from app.enums import ApproveBidding, ProductStatus
 from app.oauth2 import get_current_user
 
 router = APIRouter(prefix="/bids", tags=["Bids"])
@@ -41,7 +41,7 @@ def create_bid(
                 detail=f"Product with id {product_id} is not active for bidding",
             )
 
-        if current_user.id == product.owner_id:
+        if product.owner_id == current_user.id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Owner of this product cannot place a bid",
@@ -102,10 +102,94 @@ def get_bids_for_product(
         .all()
     )
 
-    if not bids:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"No bids found for product with id {product_id}",
+    return bids
+
+
+@router.post(
+    "/{product_id}/approve",
+    status_code=status.HTTP_200_OK,
+    response_model=schemas.ProductApprovalShow,
+)
+def approve_bid(
+    product_id: int,
+    request: ApproveBidding,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+
+    try:
+        product = (
+            db.query(models.Product)
+            .filter(models.Product.id == product_id)
+            .with_for_update()
+            .first()
         )
 
-    return bids
+        if not product:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Product with id {product_id} not found",
+            )
+
+        if product.owner_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only the owner of the product can approve or reject bids",
+            )
+
+        if product.status == ProductStatus.SOLD:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Bidding has already been approved for this product.",
+            )
+
+        if product.status not in (
+            ProductStatus.CLOSED,
+            ProductStatus.REJECTED,
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only closed or rejected products can be approved or rejected.",
+            )
+
+        latest_bid = (
+            db.query(models.Bids)
+            .filter(models.Bids.product_id == product_id)
+            .order_by(models.Bids.id.desc())
+            .first()
+        )
+
+        if not latest_bid:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No bids found for this product.",
+            )
+
+        # if owner accpets status -> sold if not status -> closed
+        winning_bidder = None
+
+        if request == ApproveBidding.APPROVE:
+            product.status = ProductStatus.SOLD
+            product.winning_bid_id = latest_bid.id
+
+            winning_bidder = {
+                "id": latest_bid.bidder.id,
+                "username": latest_bid.bidder.username,
+            }
+
+        elif request == ApproveBidding.REJECT:
+            product.status = ProductStatus.REJECTED
+            product.winning_bid_id = None
+
+        result = {
+            **schemas.ProductShow.model_validate(product).model_dump(),
+            "winning_bidder": winning_bidder,
+        }
+
+        db.commit()
+
+        return result
+
+    except Exception:
+        db.rollback()
+        raise

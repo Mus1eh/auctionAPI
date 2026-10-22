@@ -6,6 +6,7 @@ class ProductStatus(str, Enum):
     ACTIVE = "active"
     CLOSED = "closed"
     SOLD = "sold"
+    REJECTED = "rejected"
 
 
 class BidStatus(str, Enum):
@@ -18,6 +19,11 @@ class ApprovalStatus(str, Enum):
     PENDING = "pending"
     APPROVED = "approved"
     REJECTED = "rejected"
+
+
+class ApproveBidding(str, Enum):
+    APPROVE = "approve"
+    REJECT = "reject"
 
 
 # creating new enum seperated to avoid circular import issues !

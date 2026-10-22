@@ -155,7 +155,7 @@ def delete_product(
 )
 def request_status_change(
     id: int,
-    request: schemas.ProductStatusUpdate,
+    request: ProductStatus,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
@@ -187,16 +187,21 @@ def request_status_change(
 
     allowed_transitions = {
         ProductStatus.DRAFT: {ProductStatus.ACTIVE},
-        ProductStatus.ACTIVE: {ProductStatus.CLOSED},
     }
 
-    if request.status == product.status:
+    if request == product.status:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="The requested status is the same as the current status.",
         )
 
-    if request.status not in allowed_transitions.get(product.status, set()):
+    if request == ProductStatus.CLOSED:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You cannot request to close the product, please wait until the timer runs out.",
+        )
+
+    if request not in allowed_transitions.get(product.status, set()):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid product status transition.",
@@ -204,9 +209,9 @@ def request_status_change(
 
     new_request = models.ProductStatusRequest(
         product_id=product.id,
-        requested_by=current_user.id,
-        requested_status=request.status,
+        requested_status=request,
         approval_status=ApprovalStatus.PENDING,
+        requested_by=current_user.id,
     )
 
     try:

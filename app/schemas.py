@@ -2,7 +2,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
 
-from app.enums import ApprovalStatus, ProductStatus
+from app.enums import ApprovalStatus, ApproveBidding, ProductStatus
 
 
 class UserCreate(BaseModel):
@@ -130,3 +130,22 @@ class BidShow(BaseModel):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class ApproveBidRequest(BaseModel):
+    action: ApproveBidding
+
+
+class LastBidderShow(BaseModel):
+    id: int
+    username: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ProductApprovalShow(ProductShow):
+    winning_bidder: LastBidderShow | None = None
+
+
+class UserRoleUpdate(BaseModel):
+    role_name: str

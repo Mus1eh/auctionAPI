@@ -51,9 +51,19 @@ class Product(Base):
     status_requests = relationship(
         "ProductStatusRequest", back_populates="product", cascade="all, delete-orphan"
     )
-    bids = relationship("Bids", back_populates="product", cascade="all, delete-orphan")
+    bids = relationship(
+        "Bids",
+        back_populates="product",
+        foreign_keys="Bids.product_id",
+        cascade="all, delete-orphan",
+    )
     auction_started_at = Column(DateTime(timezone=True), nullable=True)
     auction_ends_at = Column(DateTime(timezone=True), nullable=True)
+
+    winning_bid_id = Column(
+        Integer, ForeignKey("bids.id", ondelete="SET NULL"), nullable=True, unique=True
+    )
+    winning_bid = relationship("Bids", foreign_keys=[winning_bid_id], uselist=False)
 
 
 class Role(Base):
@@ -134,5 +144,5 @@ class Bids(Base):
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 
-    product = relationship("Product", back_populates="bids")
+    product = relationship("Product", back_populates="bids", foreign_keys=[product_id])
     bidder = relationship("User", back_populates="bids")

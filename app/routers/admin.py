@@ -195,7 +195,7 @@ def reject_status_request(
 )
 def admin_change_product_status(
     product_id: int,
-    status_value: ProductStatus,
+    request: ProductStatus,
     db: Session = Depends(get_db),
 ):
     try:
@@ -208,13 +208,13 @@ def admin_change_product_status(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Product not found."
             )
 
-        if product.status == status_value:
+        if product.status == request:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="Product is already in the requested status.",
             )
 
-        product.status = status_value
+        product.status = request
 
         if product.status == ProductStatus.ACTIVE:
             product.auction_started_at = datetime.now(UTC)
@@ -223,6 +223,65 @@ def admin_change_product_status(
         db.commit()
         db.refresh(product)
         return product
+
+    except Exception:
+        db.rollback()
+        raise
+
+
+@router.patch(
+    "/users/{user_id}/role",
+    response_model=schemas.UserShow,
+    dependencies=[Depends(require_role(["superadmin"]))],
+)
+def change_user_role(
+    user_id: int,
+    request: schemas.UserRoleUpdate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    try:
+        if request.role_name not in ("user", "admin"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Only 'user' and 'admin' roles can be assigned",
+            )
+
+        user = (
+            db.query(models.User)
+            .filter(models.User.id == user_id)
+            .with_for_update()
+            .first()
+        )
+
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found",
+            )
+
+        if user.role_name == "superadmin":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Cannot modify a superadmin account",
+            )
+
+        role = (
+            db.query(models.Role).filter(models.Role.name == request.role_name).first()
+        )
+
+        if not role:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Role not found",
+            )
+
+        user.role_name = role.name
+
+        db.commit()
+        db.refresh(user)
+
+        return user
 
     except Exception:
         db.rollback()
