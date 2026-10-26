@@ -1,5 +1,6 @@
 import os
 import smtplib
+import ssl
 from email.message import EmailMessage
 
 from dotenv import load_dotenv
@@ -52,4 +53,26 @@ def send_password_reset_email(to_email: str, reset_token: str):
             SMTP_USERNAME,
             SMTP_PASSWORD,
         )
+        smtp.send_message(message)
+
+
+def send_auction_email(to_email: str, subject: str, body: str) -> None:
+    message = EmailMessage()
+
+    message["From"] = SMTP_FROM_EMAIL
+    message["To"] = to_email
+    message["Subject"] = subject
+    message.set_content(body)
+
+    with smtplib.SMTP(
+        SMTP_HOST,
+        SMTP_PORT,
+        timeout=20,
+    ) as smtp:
+        smtp.ehlo()
+        smtp.starttls(context=ssl.create_default_context())
+        smtp.ehlo()
+
+        smtp.login(SMTP_USERNAME, SMTP_PASSWORD)
+
         smtp.send_message(message)

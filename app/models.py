@@ -1,4 +1,4 @@
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, func
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Text, func
 from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.orm import relationship
 
@@ -148,3 +148,22 @@ class Bids(Base):
 
     product = relationship("Product", back_populates="bids", foreign_keys=[product_id])
     bidder = relationship("User", back_populates="bids")
+
+
+class EmailOutbox(Base):
+    __tablename__ = "email_outbox"
+
+    id = Column(Integer, primary_key=True, index=True)
+    to_email = Column(String(100), nullable=False)
+    subject = Column(String(255), nullable=False)
+    body = Column(Text, nullable=False)
+
+    status = Column(String(20), nullable=False, default="pending")
+
+    created_at = Column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+
+    sent_at = Column(DateTime(timezone=True), nullable=True)

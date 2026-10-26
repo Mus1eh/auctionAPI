@@ -1,13 +1,13 @@
 from fastapi import FastAPI
 
-from app.database import Base, engine
+# from app.database import Base, engine
 from app.routers import admin, authentication, bids, product, user
 
 app = FastAPI(
     title="PROJECT ManAPI",
 )
 
-Base.metadata.create_all(bind=engine)
+# Base.metadata.create_all(bind=engine) -> removed for testing, then we'll use alembic
 
 app.include_router(bids.router)
 app.include_router(admin.router)

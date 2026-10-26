@@ -5,6 +5,10 @@ from sqlalchemy.orm import Session
 
 from app import models, schemas
 from app.database import get_db
+from app.email_templates import (
+    bid_approved_email,
+    bid_rejected_email,
+)
 from app.enums import ApproveBidding, ProductStatus
 from app.oauth2 import get_current_user
 
@@ -54,16 +58,23 @@ def create_bid(
                 status_code=status.HTTP_409_CONFLICT,
                 detail=f"Auction for product with id {product_id} has ended",
             )
+        if request.amount <= product.current_price:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Bid amount must be greater than the current price of {product.current_price}",
+            )
+
+        new_price = request.amount
 
         new_bid = models.Bids(
             product_id=product_id,
             user_id=current_user.id,
-            amount=request.increment,
+            amount=new_price,
         )
 
         db.add(new_bid)
 
-        product.current_price = new_bid.amount + product.current_price
+        product.current_price = new_price
 
         db.commit()
         db.refresh(new_bid)
@@ -73,6 +84,21 @@ def create_bid(
     except Exception:
         db.rollback()
         raise
+
+
+# async function refreshAuction(productId) {
+#     const response = await fetch(`/products/${productId}`);
+#     const product = await response.json();
+
+#     document.getElementById("current-price").textContent =
+#         product.current_price;
+# }
+
+# setInterval(() => {
+#     refreshAuction(10);
+# }, 2000);
+
+# use the above code in frontend, it's called HTTP Polling -> refresh data every 2 seconds to get latest data.
 
 
 @router.get(
@@ -116,7 +142,6 @@ def approve_bid(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-
     try:
         product = (
             db.query(models.Product)
@@ -152,34 +177,60 @@ def approve_bid(
                 detail="Only closed or rejected products can be approved or rejected.",
             )
 
-        latest_bid = (
+        highest_bid = (
             db.query(models.Bids)
             .filter(models.Bids.product_id == product_id)
-            .order_by(models.Bids.id.desc())
+            .order_by(
+                models.Bids.amount.desc(),
+                models.Bids.id.desc(),
+            )
             .first()
         )
 
-        if not latest_bid:
+        if not highest_bid:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="No bids found for this product.",
             )
 
-        # if owner accpets status -> sold if not status -> closed
         winning_bidder = None
 
         if request == ApproveBidding.APPROVE:
             product.status = ProductStatus.SOLD
-            product.winning_bid_id = latest_bid.id
+            product.winning_bid_id = highest_bid.id
 
             winning_bidder = {
-                "id": latest_bid.bidder.id,
-                "username": latest_bid.bidder.username,
+                "id": highest_bid.bidder.id,
+                "username": highest_bid.bidder.username,
             }
+
+            db.add(
+                models.EmailOutbox(
+                    to_email=highest_bid.bidder.email,
+                    subject=f"Bid Approved - Product #{product.id}",
+                    body=bid_approved_email(
+                        product,
+                        highest_bid.bidder,
+                    ),
+                    status="pending",
+                )
+            )
 
         elif request == ApproveBidding.REJECT:
             product.status = ProductStatus.REJECTED
             product.winning_bid_id = None
+
+            db.add(
+                models.EmailOutbox(
+                    to_email=highest_bid.bidder.email,
+                    subject=f"Bid Rejected - Product #{product.id}",
+                    body=bid_rejected_email(
+                        product,
+                        highest_bid.bidder,
+                    ),
+                    status="pending",
+                )
+            )
 
         result = {
             **schemas.ProductShow.model_validate(product).model_dump(),

@@ -9,9 +9,13 @@ celery_app = Celery(
 
 celery_app.conf.beat_schedule = {
     "close-expired-auctions": {
-        "tasks": "app.tasks.close_expired_auctions",
-        "schedule": 10,
-    }
+        "task": "app.tasks.close_expired_auctions",
+        "schedule": 10.0,
+    },
+    "process-email-outbox": {
+        "task": "app.tasks.process_email_outbox",
+        "schedule": 10.0,
+    },
 }
 
 celery_app.conf.timezone = "UTC"

@@ -8,6 +8,7 @@ from app.database import get_db
 from app.enums import ApprovalStatus, ProductStatus
 from app.oauth2 import get_current_user
 from app.permissions import require_role
+from app.services.auction_service import close_auction
 
 router = APIRouter(
     prefix="/admin",
@@ -191,37 +192,65 @@ def reject_status_request(
 
 
 @router.post(
-    "/products/{product_id}/status/{status_value}", response_model=schemas.ProductShow
+    "/products/{product_id}/status/{status_value}",
+    response_model=schemas.ProductShow,
 )
 def admin_change_product_status(
     product_id: int,
-    request: ProductStatus,
+    status_value: ProductStatus,
     db: Session = Depends(get_db),
 ):
     try:
         product = (
-            db.query(models.Product).filter(models.Product.id == product_id).first()
+            db.query(models.Product)
+            .filter(models.Product.id == product_id)
+            .with_for_update()
+            .first()
         )
 
         if not product:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Product not found."
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Product not found.",
             )
 
-        if product.status == request:
+        if product.status == status_value:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="Product is already in the requested status.",
             )
 
-        product.status = request
+        if status_value == ProductStatus.CLOSED:
+            if product.status != ProductStatus.ACTIVE:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="Only active auctions can be closed.",
+                )
 
-        if product.status == ProductStatus.ACTIVE:
-            product.auction_started_at = datetime.now(UTC)
-            product.auction_ends_at = datetime.now(UTC) + timedelta(hours=1)
+            close_auction(db, product)
+
+        elif status_value == ProductStatus.ACTIVE:
+            if product.status != ProductStatus.DRAFT:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="Only draft products can be activated.",
+                )
+
+            now = datetime.now(UTC)
+
+            product.status = ProductStatus.ACTIVE
+            product.auction_started_at = now
+            product.auction_ends_at = now + timedelta(hours=1)
+
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="This endpoint supports activating or closing auctions only.",
+            )
 
         db.commit()
         db.refresh(product)
+
         return product
 
     except Exception:

@@ -10,7 +10,7 @@ from app.oauth2 import get_current_user
 router = APIRouter(prefix="/users", tags=["Users"])
 
 
-@router.post("/", response_model=schemas.UserCreate)
+@router.post("/", response_model=schemas.UserShow, status_code=status.HTTP_201_CREATED)
 def create_user(request: schemas.UserCreate, db: Session = Depends(get_db)):
     existing_user = (
         db.query(models.User)
