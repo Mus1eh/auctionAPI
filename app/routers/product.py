@@ -62,12 +62,12 @@ def get_my_products(
 # GET ALL PRODUCTS BY STATUS IT'S BETTER THAN TO GET ALL PRODUCTS AT ONCE SO THE DATABASE CAN HANDLE
 # AND FRONT END CAN HANDLE IT BETTER AND ALSO WE CAN ADD PAGINATION LATER ON
 @router.get(
-    "/status/{status}",
+    "/status/{stat}",
     response_model=list[schemas.ProductShow],
     response_model_exclude_none=True,
 )
-def get_products(status: ProductStatus, db: Session = Depends(get_db)):
-    products = db.query(models.Product).filter(models.Product.status == status).all()
+def get_products(stat: ProductStatus, db: Session = Depends(get_db)):
+    products = db.query(models.Product).filter(models.Product.status == stat).all()
     if not products:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="No products found."

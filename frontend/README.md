@@ -87,7 +87,5 @@ e2e/            Playwright specs
 - No user directory and no usernames for bidders/sellers, so the UI shows `Bidder #id` / `Seller #id`. Admins look up users by ID.
 - Users can't see their own go-live requests (only admins can list pending ones), and can't find their own user id
   unless they own a product.
-- **Backend bug:** `GET /products/status/{status}` returns **500** instead of 404 when no product has that status.
-  The `status` path parameter shadows `fastapi.status`, so `status.HTTP_404_NOT_FOUND` raises an AttributeError
-  (`app/routers/product.py`, `get_products`). The UI shows an error state for empty tabs until this is fixed
-  (e.g. `from fastapi import status as http_status`, or rename the parameter).
+- `GET /products/status/{stat}` and `GET /products/my` answer **404** instead of `[]` when nothing matches;
+  the client treats that 404 as an empty list.
