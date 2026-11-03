@@ -35,10 +35,21 @@ def test_invalid_product_price(client, make_user, auth):
 
 
 def test_get_product_by_id(client, make_user, make_product):
-    product = make_product(make_user())
+    product = make_product(make_user(), ProductStatus.ACTIVE)
     response = client.get(f"/products/{product.id}")
     assert response.status_code == 200, response.text
     assert response.json()["id"] == product.id
+
+
+def test_get_private_product_by_id(client, make_user, make_product, auth):
+    owner = make_user()
+    product = make_product(owner, ProductStatus.DRAFT)
+    url = f"/products/{product.id}"
+    assert client.get(url, headers=auth(owner)).status_code == 200
+    assert client.get(url, headers=auth(make_user("admin"))).status_code == 200
+    # NON-OWNERS GET THE SAME 404 AS A MISSING PRODUCT
+    assert client.get(url).status_code == 404
+    assert client.get(url, headers=auth(make_user())).status_code == 404
 
 
 def test_get_missing_product(client):
@@ -59,10 +70,46 @@ def test_get_my_products_empty(client, make_user, auth):
 
 
 def test_get_products_by_status(client, make_user, make_product):
-    product = make_product(make_user(), ProductStatus.DRAFT)
-    response = client.get("/products/status/draft")
+    product = make_product(make_user(), ProductStatus.ACTIVE)
+    response = client.get("/products/status/active")
     assert response.status_code == 200, response.text
     assert product.id in [row["id"] for row in response.json()]
+
+
+def test_private_status_returns_only_own_products(
+    client, make_user, make_product, auth
+):
+    owner, admin = make_user(), make_user("admin")
+    own = make_product(owner, ProductStatus.REJECTED)
+    make_product(admin, ProductStatus.REJECTED)
+
+    response = client.get("/products/status/rejected", headers=auth(owner))
+    assert response.status_code == 200, response.text
+    assert [row["id"] for row in response.json()] == [own.id]
+
+    # ADMINS ONLY SEE THEIR OWN HERE TOO, EVERYONE'S IS IN THE ADMIN DASHBOARD
+    response = client.get("/products/status/rejected", headers=auth(admin))
+    assert own.id not in [row["id"] for row in response.json()]
+
+
+def test_private_status_empty_message(client, make_user, auth):
+    response = client.get("/products/status/draft", headers=auth(make_user()))
+    assert response.status_code == 404
+    assert response.json()["detail"] == "You have no draft products."
+
+
+def test_private_status_requires_login(client):
+    assert client.get("/products/status/draft").status_code == 401
+
+
+def test_admin_sees_all_products_by_status(client, make_user, make_product, auth):
+    products = [make_product(make_user(), ProductStatus.DRAFT) for _ in range(2)]
+    response = client.get(
+        "/admin/products/status/draft", headers=auth(make_user("admin"))
+    )
+    assert response.status_code == 200, response.text
+    ids = [row["id"] for row in response.json()]
+    assert all(product.id in ids for product in products)
 
 
 def test_update_product(client, make_user, make_product, auth):

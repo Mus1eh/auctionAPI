@@ -68,7 +68,7 @@ function UserCard({ user, onDeleted }: { user: User; onDeleted: () => void }) {
         <Button variant="danger-ghost" onClick={() => setConfirm(true)}>
           <Trash2 className="size-4" aria-hidden /> Delete user
         </Button>
-        <p className="mt-1 text-xs text-stone-500">Admin and superadmin accounts can’t be deleted.</p>
+        <p className="mt-1 text-xs text-stone-500">Only superadmins can delete admins. Superadmin accounts can’t be deleted.</p>
       </div>
       <ConfirmDialog
         open={confirm}

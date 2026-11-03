@@ -12,23 +12,32 @@ import type {
   ProductStatus,
   Role,
 } from "./types";
+import { isPrivateStatus } from "./types";
 
 export const queryKeys = {
   products: ["products"] as const,
+  // Private statuses hold the signed-in user's own products, so they live under
+  // the per-user "my-products" root and are dropped on sign-out.
   productsByStatus: (status: ProductStatus) =>
-    ["products", "status", status] as const,
+    isPrivateStatus(status)
+      ? (["my-products", "status", status] as const)
+      : (["products", "status", status] as const),
   product: (id: number) => ["products", "detail", id] as const,
   myProducts: ["my-products"] as const,
   bids: (productId: number) => ["bids", productId] as const,
   bidsPage: (productId: number, page: number) =>
     ["bids", productId, page] as const,
+  adminProducts: ["admin", "products"] as const,
+  adminProductsByStatus: (status: ProductStatus) =>
+    ["admin", "products", status] as const,
   pendingRequests: ["admin", "pending-requests"] as const,
   adminDashboard: ["admin", "dashboard"] as const,
   user: (id: number) => ["users", id] as const,
 };
 
-/** Query roots holding per-user data; dropped from the cache on sign-out. */
-export const PRIVATE_QUERY_ROOTS = ["my-products", "admin", "users"];
+/** Query roots holding per-user data; dropped from the cache on sign-out.
+ * "products" is included because product details can be the user's private drafts. */
+export const PRIVATE_QUERY_ROOTS = ["my-products", "admin", "users", "products"];
 
 /** The API has no push channel; active auctions are polled (as suggested in app/routers/bids.py). */
 export const LIVE_POLL_MS = 3000;
@@ -37,6 +46,15 @@ export function useProductsByStatus(status: ProductStatus) {
   return useQuery({
     queryKey: queryKeys.productsByStatus(status),
     queryFn: () => productsApi.listByStatus(status),
+    refetchInterval: status === "active" ? LIVE_POLL_MS * 3 : false,
+  });
+}
+
+/** Admin view: every user's products, including private draft/closed ones. */
+export function useAdminProductsByStatus(status: ProductStatus) {
+  return useQuery({
+    queryKey: queryKeys.adminProductsByStatus(status),
+    queryFn: () => adminApi.productsByStatus(status),
     refetchInterval: status === "active" ? LIVE_POLL_MS * 3 : false,
   });
 }
@@ -102,6 +120,7 @@ function useInvalidateProducts() {
     void Promise.all([
       queryClient.invalidateQueries({ queryKey: queryKeys.products }),
       queryClient.invalidateQueries({ queryKey: queryKeys.myProducts }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.adminProducts }),
       productId !== undefined &&
         queryClient.invalidateQueries({ queryKey: queryKeys.bids(productId) }),
     ]);

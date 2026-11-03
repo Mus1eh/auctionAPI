@@ -73,6 +73,16 @@ describe('apiRequest', () => {
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
+  it('optional auth sends the token when signed in and still works signed out', async () => {
+    const fetchMock = mockFetch({ 'GET /products/1': { id: 1 } })
+    await expect(apiRequest('/products/1', { auth: 'optional' })).resolves.toEqual({ id: 1 })
+    expect(new Headers(fetchMock.mock.calls[0][1]?.headers).get('Authorization')).toBeNull()
+
+    tokenStore.setTokens({ access_token: 'a', refresh_token: 'r' })
+    await apiRequest('/products/1', { auth: 'optional' })
+    expect(new Headers(fetchMock.mock.calls[1][1]?.headers).get('Authorization')).toBe('Bearer a')
+  })
+
   it('refreshes once on 401 and retries with the new token', async () => {
     tokenStore.setTokens({ access_token: 'expired', refresh_token: 'refresh-1' })
     const fetchMock = mockFetch({

@@ -13,6 +13,7 @@ from app.database import get_db
 load_dotenv()
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/")
+optional_oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/", auto_error=False)
 
 SECRET_KEY = os.environ["SECRET_KEY"]
 ALGORITHM = os.environ["ALGORITHM"]
@@ -57,3 +58,11 @@ def get_current_user(
     if user is None:
         raise credentials_exception
     return user
+
+
+def get_current_user_optional(
+    token: str | None = Depends(optional_oauth2_scheme), db: Session = Depends(get_db)
+):
+    if token is None:
+        return None
+    return get_current_user(token, db)

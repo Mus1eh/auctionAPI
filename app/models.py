@@ -4,9 +4,10 @@ from sqlalchemy.orm import relationship
 
 from app.database import Base
 from app.enums import ApprovalStatus, ProductStatus
+from app.mixin import SoftDeleteMixin
 
 
-class User(Base):
+class User(SoftDeleteMixin, Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -23,7 +24,7 @@ class User(Base):
     bids = relationship("Bids", back_populates="bidder", cascade="all, delete-orphan")
 
 
-class Product(Base):
+class Product(SoftDeleteMixin, Base):
     __tablename__ = "products"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -63,7 +64,11 @@ class Product(Base):
     winning_bid_id = Column(
         Integer, ForeignKey("bids.id", ondelete="SET NULL"), nullable=True, unique=True
     )
-    winning_bid = relationship("Bids", foreign_keys=[winning_bid_id], uselist=False)
+    # post_update BREAKS THE products <-> bids FK CYCLE: winning_bid_id IS SET/CLEARED IN A
+    # SEPARATE UPDATE, SO DELETING A PRODUCT TOGETHER WITH ITS BIDS (E.G. DELETING ITS OWNER) WORKS
+    winning_bid = relationship(
+        "Bids", foreign_keys=[winning_bid_id], uselist=False, post_update=True
+    )
 
 
 class Role(Base):
@@ -91,7 +96,12 @@ class PasswordResetToken(Base):
     __tablename__ = "password_reset_tokens"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    user_id = Column(
+        Integer,
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     token_hash = Column(String(64), unique=True, nullable=False)
     expires_at = Column(DateTime(timezone=True), nullable=False)
     used_at = Column(DateTime(timezone=True), nullable=True)
@@ -101,8 +111,12 @@ class ProductStatusRequest(Base):
     __tablename__ = "product_status_requests"
 
     id = Column(Integer, primary_key=True, index=True)
-    product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
-    requested_by = Column(Integer, ForeignKey("users.id"), nullable=False)
+    product_id = Column(
+        Integer, ForeignKey("products.id", ondelete="CASCADE"), nullable=False
+    )
+    requested_by = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
     requested_status = Column(
         SQLEnum(
             ProductStatus,
@@ -123,7 +137,10 @@ class ProductStatusRequest(Base):
     created_at = Column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
-    reviewed_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    # SET NULL -> IF THE REVIEWING ADMIN IS DELETED THE REQUEST (AND ITS HISTORY) STAYS
+    reviewed_by = Column(
+        Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
     reviewed_at = Column(DateTime(timezone=True), nullable=True)
     product = relationship("Product", back_populates="status_requests")
 

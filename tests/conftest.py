@@ -8,7 +8,7 @@ from uuid import uuid4
 import pytest
 from dotenv import load_dotenv
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.engine import make_url
 from sqlalchemy.orm import Session
 
@@ -47,6 +47,11 @@ engine = create_engine(TEST_DATABASE_URL)
 
 @pytest.fixture(scope="session", autouse=True)
 def schema():
+    # Rebuild from the current models so new columns reach the test database.
+    # CASCADE because products and bids reference each other, which drop_all can't order.
+    with engine.begin() as conn:
+        for table_name in Base.metadata.tables:
+            conn.execute(text(f'DROP TABLE IF EXISTS "{table_name}" CASCADE'))
     Base.metadata.create_all(bind=engine)
     yield
     engine.dispose()

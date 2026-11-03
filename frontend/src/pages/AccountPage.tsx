@@ -1,10 +1,10 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { LogOut, ShieldCheck } from 'lucide-react'
+import { LogOut, ShieldCheck, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useNavigate } from 'react-router'
 import { toast } from 'sonner'
-import { authApi } from '@/api/endpoints'
+import { authApi, usersApi } from '@/api/endpoints'
 import { useAuth } from '@/auth/AuthContext'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Alert } from '@/components/ui/Alert'
@@ -104,6 +104,52 @@ function SessionsCard() {
   )
 }
 
+function DeleteAccountCard() {
+  const { endSession, isSuperadmin } = useAuth()
+  const navigate = useNavigate()
+  const [open, setOpen] = useState(false)
+  const [loading, setLoading] = useState(false)
+
+  const deleteAccount = async () => {
+    setLoading(true)
+    try {
+      await usersApi.removeMe()
+      endSession()
+      navigate('/', { replace: true })
+      toast.success('Your account has been deleted')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not delete your account.')
+      setLoading(false)
+      setOpen(false)
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader title="Delete account" description="Permanently delete your account and all of your listings." />
+      <div className="p-5 sm:p-6">
+        {isSuperadmin ? (
+          <p className="text-sm text-stone-500">Superadmin accounts can’t be deleted.</p>
+        ) : (
+          <Button variant="danger-ghost" onClick={() => setOpen(true)}>
+            <Trash2 className="size-4" aria-hidden /> Delete account
+          </Button>
+        )}
+      </div>
+      <ConfirmDialog
+        open={open}
+        title="Delete your account?"
+        description="Your account and all of your listings are permanently deleted. This cannot be undone."
+        confirmLabel="Delete account"
+        tone="danger"
+        loading={loading}
+        onConfirm={deleteAccount}
+        onCancel={() => setOpen(false)}
+      />
+    </Card>
+  )
+}
+
 export function AccountPage() {
   const { username, role } = useAuth()
 
@@ -130,6 +176,8 @@ export function AccountPage() {
       </Card>
 
       <SessionsCard />
+
+      <DeleteAccountCard />
     </div>
   )
 }

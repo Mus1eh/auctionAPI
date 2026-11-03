@@ -14,3 +14,4 @@ pwdlib[argon2]
 email-validator
 psycopg
 celery[redis]
+alembic

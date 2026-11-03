@@ -20,6 +20,8 @@ class UserShow(BaseModel):
 
 
 class ProductCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     name: str
     description: str | None = None
     start_price: int = Field(gt=0)
@@ -45,6 +47,8 @@ class GetProductByStatus(BaseModel):
 
 
 class ProductPatch(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     name: str | None = None
     description: str | None = None
     start_price: int | None = Field(default=None, gt=0)

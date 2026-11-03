@@ -1,0 +1,56 @@
+from datetime import UTC, datetime
+
+from sqlalchemy import or_
+from sqlalchemy.orm import Session
+
+from app import models
+
+
+class UserRepository:
+    def __init__(self, db: Session):
+        self.db = db
+
+    def _query(self, include_deleted: bool = False):
+        query = self.db.query(models.User)
+
+        if not include_deleted:
+            query = query.filter(models.User.deleted_at.is_(None))
+
+        return query
+
+    def get_by_id(self, user_id: int):
+        return self._query().filter(models.User.id == user_id).first()
+
+    def create(self, user: models.User):
+        self.db.add(user)
+        self.db.flush()
+        return user
+
+    def get_role_by_name(self, role_name: str):
+        return self.db.query(models.Role).filter(models.Role.name == role_name).first()
+
+    def update_role(self, user: models.User, role: models.Role):
+        user.role_name = role.name
+        self.db.flush()
+        return user
+
+    def softdelete(self, user: models.User):
+        user.deleted_at = datetime.now(UTC)
+        self.db.flush()
+        return user
+
+    # Soft-deleted users are included: their email and username still hold the unique constraints.
+    def check_user_exists(self, username: str, email: str):
+        return (
+            self._query(include_deleted=True)
+            .filter(
+                or_(
+                    models.User.email == email,
+                    models.User.username == username,
+                )
+            )
+            .first()
+        )
+
+    def get_by_id_for_delete(self, user_id: int):
+        return self._query().filter(models.User.id == user_id).with_for_update().first()

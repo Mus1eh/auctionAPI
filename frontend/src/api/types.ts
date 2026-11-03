@@ -36,3 +36,10 @@ export interface CsvRowError {
 }
 
 export const PRODUCT_STATUSES: ProductStatus[] = ['active', 'draft', 'closed', 'sold', 'rejected']
+
+/** Statuses the API only returns to their owner (requires sign-in). */
+export const PRIVATE_PRODUCT_STATUSES: ProductStatus[] = ['draft', 'rejected']
+
+export function isPrivateStatus(status: ProductStatus): boolean {
+  return PRIVATE_PRODUCT_STATUSES.includes(status)
+}

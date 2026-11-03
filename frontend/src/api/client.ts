@@ -118,7 +118,8 @@ export interface RequestOptions {
   json?: unknown
   body?: FormData | URLSearchParams
   query?: Record<string, string | number | undefined>
-  auth?: boolean
+  /** true: requires a session. 'optional': sends the token when signed in, works signed out too. */
+  auth?: boolean | 'optional'
   signal?: AbortSignal
 }
 
@@ -128,7 +129,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   if (auth && !tokenStore.getAccessToken() && tokenStore.getRefreshToken()) {
     await refreshSession()
   }
-  if (auth && !tokenStore.getAccessToken()) {
+  if (auth === true && !tokenStore.getAccessToken()) {
     throw new ApiError(401, 'Please sign in to continue.')
   }
 

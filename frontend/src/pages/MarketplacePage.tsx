@@ -2,7 +2,7 @@ import { PackageOpen, Search, SearchX } from 'lucide-react'
 import { useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { useProductsByStatus } from '@/api/queries'
-import { PRODUCT_STATUSES, type ProductStatus } from '@/api/types'
+import { isPrivateStatus, PRODUCT_STATUSES, type ProductStatus } from '@/api/types'
 import { useAuth } from '@/auth/AuthContext'
 import { ProductCard, ProductCardSkeleton } from '@/components/product/ProductCard'
 import { STATUS_META } from '@/components/product/status'
@@ -39,6 +39,8 @@ export function MarketplacePage() {
   const sort: SortKey = isSort(sortParam) ? sortParam : status === 'active' ? 'ending' : 'newest'
 
   const { data, isPending, isError, error, refetch, isFetching } = useProductsByStatus(status)
+  // Draft/ended listings are private to their owner, so only signed-in users get those tabs.
+  const tabs = PRODUCT_STATUSES.filter((s) => authStatus === 'authenticated' || !isPrivateStatus(s))
   const products = useMemo(() => filterAndSortProducts(data ?? [], query, sort), [data, query, sort])
 
   const update = (changes: Record<string, string | null>) => {
@@ -77,7 +79,7 @@ export function MarketplacePage() {
       <section aria-label="Listings" className="space-y-5">
         <div className="flex flex-col gap-3 border-b border-stone-200 pb-4 lg:flex-row lg:items-center lg:justify-between">
           <div role="tablist" aria-label="Listing status" className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1 lg:pb-0">
-            {PRODUCT_STATUSES.map((s) => (
+            {tabs.map((s) => (
               <button
                 key={s}
                 role="tab"
@@ -148,7 +150,13 @@ export function MarketplacePage() {
           ) : (
             <EmptyState
               icon={PackageOpen}
-              title={status === 'active' ? 'No live auctions right now' : `No listings in “${TAB_LABELS[status]}”`}
+              title={
+                status === 'active'
+                  ? 'No live auctions right now'
+                  : isPrivateStatus(status)
+                    ? `You have no ${status} products`
+                    : `No listings in “${TAB_LABELS[status]}”`
+              }
               description={status === 'active' ? 'New lots go live as soon as an admin approves them. Check back soon.' : undefined}
               action={
                 authStatus === 'authenticated' ? (
