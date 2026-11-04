@@ -3,8 +3,16 @@ from sqlalchemy.orm import Session
 
 from app import models, schemas
 from app.database import get_db
-from app.dependencies import get_user_repo
+from app.dependencies import (
+    get_auth_repo,
+    get_product_repo,
+    get_product_status_request_repo,
+    get_user_repo,
+)
 from app.oauth2 import get_current_user
+from app.repositories.authentication import AuthenticationRepository
+from app.repositories.product import ProductRepository
+from app.repositories.product_status_request import ProductStatusRequestRepository
 from app.repositories.user import UserRepository
 from app.services.users.create import create_user as create_user_service
 from app.services.users.delete import delete_my_account as delete_my_account_service
@@ -29,11 +37,19 @@ def delete_my_account(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
     user_repo: UserRepository = Depends(get_user_repo),
+    auth_repo: AuthenticationRepository = Depends(get_auth_repo),
+    product_repo: ProductRepository = Depends(get_product_repo),
+    status_repo: ProductStatusRequestRepository = Depends(
+        get_product_status_request_repo
+    ),
 ):
     return delete_my_account_service(
         db=db,
         current_user=current_user,
         user_repo=user_repo,
+        auth_repo=auth_repo,
+        product_repo=product_repo,
+        status_repo=status_repo,
     )
 
 
@@ -62,10 +78,18 @@ def delete_user(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
     user_repo: UserRepository = Depends(get_user_repo),
+    auth_repo: AuthenticationRepository = Depends(get_auth_repo),
+    product_repo: ProductRepository = Depends(get_product_repo),
+    status_repo: ProductStatusRequestRepository = Depends(
+        get_product_status_request_repo
+    ),
 ):
     return delete_user_by_id_service(
         db=db,
         user_id=id,
         current_user=current_user,
         user_repo=user_repo,
+        auth_repo=auth_repo,
+        product_repo=product_repo,
+        status_repo=status_repo,
     )

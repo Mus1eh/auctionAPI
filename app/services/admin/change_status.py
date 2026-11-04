@@ -25,7 +25,7 @@ def change_product_status(
 
         if product.status == status_value:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=status.HTTP_409_CONFLICT,
                 detail="The requested status is the same as the current status.",
             )
 

@@ -153,7 +153,11 @@ export const BIDS_PAGE_SIZE = 10;
 
 export const bidsApi = {
   list(productId: number, page: number, limit = BIDS_PAGE_SIZE) {
-    return apiRequest<Bid[]>(`/bids/${productId}`, { query: { page, limit } });
+    // Optional auth: owners (and admins) can see bids on their private products.
+    return apiRequest<Bid[]>(`/bids/${productId}`, {
+      auth: "optional",
+      query: { page, limit },
+    });
   },
   place(productId: number, amount: number) {
     return apiRequest<Bid>(`/bids/${productId}`, {

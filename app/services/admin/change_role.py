@@ -26,7 +26,7 @@ def change_user_role(
                 detail="Only user and admin roles can be assigned.",
             )
 
-        user = user_repo.get_by_id(user_id)
+        user = user_repo.get_by_id_for_delete(user_id)
 
         if user is None:
             raise HTTPException(

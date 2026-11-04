@@ -38,6 +38,15 @@ class ProductRepository:
             .all()
         )
 
+    def get_by_owner_for_update(self, owner_id: int):
+        return (
+            self._query()
+            .filter(models.Product.owner_id == owner_id)
+            .order_by(models.Product.id.asc())
+            .with_for_update()
+            .all()
+        )
+
     def get_by_status(
         self,
         product_status: ProductStatus,
@@ -55,7 +64,7 @@ class ProductRepository:
 
     def get_all_by_status(self, product_status: ProductStatus):
         return (
-            self.db.query(models.Product)
+            self._query()
             .filter(models.Product.status == product_status)
             .order_by(models.Product.id.asc())
             .all()

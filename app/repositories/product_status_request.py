@@ -1,3 +1,5 @@
+from datetime import UTC, datetime
+
 from sqlalchemy.orm import Session
 
 from app import models
@@ -16,6 +18,16 @@ class ProductStatusRequestRepository:
                 models.ProductStatusRequest.approval_status == ApprovalStatus.PENDING,
             )
             .first()
+        )
+
+    def cancel(self, status_request: models.ProductStatusRequest, reviewed_by: int):
+        return self.update(
+            status_request,
+            {
+                "approval_status": ApprovalStatus.CANCELLED,
+                "reviewed_by": reviewed_by,
+                "reviewed_at": datetime.now(UTC),
+            },
         )
 
     def get_all_pending(self):

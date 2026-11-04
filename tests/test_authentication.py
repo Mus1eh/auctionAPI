@@ -134,11 +134,13 @@ def test_forgot_password_unknown_email(client):
 
 
 def test_forgot_and_reset_password(client, db_session, make_user, monkeypatch):
-    import app.routers.authentication as auth_router
+    import app.services.authentication.password as password_service
 
     sent = []
     monkeypatch.setattr(
-        auth_router, "send_password_reset_email", lambda **kwargs: sent.append(kwargs)
+        password_service,
+        "send_password_reset_email",
+        lambda **kwargs: sent.append(kwargs),
     )
     user = make_user()
     response = client.post("/auth/forgot-password", json={"email": user.email})
