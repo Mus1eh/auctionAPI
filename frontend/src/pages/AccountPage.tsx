@@ -126,7 +126,7 @@ function DeleteAccountCard() {
 
   return (
     <Card>
-      <CardHeader title="Delete account" description="Permanently delete your account and all of your listings." />
+      <CardHeader title="Delete account" description="Permanently delete your account and your listings without bids. Accounts with unsettled auctions cannot be deleted." />
       <div className="p-5 sm:p-6">
         {isSuperadmin ? (
           <p className="text-sm text-stone-500">Superadmin accounts can’t be deleted.</p>
@@ -139,7 +139,7 @@ function DeleteAccountCard() {
       <ConfirmDialog
         open={open}
         title="Delete your account?"
-        description="Your account and all of your listings are permanently deleted. This cannot be undone."
+        description="Your account and your listings without bids are permanently deleted. Sold listings stay on record. This cannot be undone."
         confirmLabel="Delete account"
         tone="danger"
         loading={loading}

@@ -141,7 +141,7 @@ Endpoints marked 🔒 need an `Authorization: Bearer <access_token>` header.
 | --- | --- | --- |
 | POST | `/bids/{product_id}` 🔒 | Place a bid, with `{ "amount": 150 }` |
 | GET | `/bids/{product_id}?page=1&limit=20` | Bid history, newest first |
-| POST | `/bids/{product_id}/approve?request=approve\|reject` 🔒 | Owner accepts or rejects the highest bid after the auction closes |
+| POST | `/bids/{product_id}/approve?request=approve\|reject` 🔒 | Owner or superadmin accepts or rejects the highest bid after the auction closes |
 
 ### Admin: `/admin` 🔒 (admin or superadmin)
 | Method | Path | Description |

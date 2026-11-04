@@ -56,6 +56,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/products/status/{stat}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Admin Get Products By Status */
+        get: operations["admin_get_products_by_status_admin_products_status__stat__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/status-request/pending": {
         parameters: {
             query?: never;
@@ -294,6 +311,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/users/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get My Account */
+        get: operations["get_my_account_users_me_get"];
+        put?: never;
+        post?: never;
+        /** Delete My Account */
+        delete: operations["delete_my_account_users_me_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/users/{id}": {
         parameters: {
             query?: never;
@@ -346,7 +381,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/products/status/{status}": {
+    "/products/status/{stat}": {
         parameters: {
             query?: never;
             header?: never;
@@ -354,26 +389,9 @@ export interface paths {
             cookie?: never;
         };
         /** Get Products */
-        get: operations["get_products_products_status__status__get"];
+        get: operations["get_products_products_status__stat__get"];
         put?: never;
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/products/import-csv": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Import Products Csv */
-        post: operations["import_products_csv_products_import_csv_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -417,6 +435,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/products/{id}/restore-draft": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Restore Product To Draft */
+        post: operations["restore_product_to_draft_products__id__restore_draft_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/products/import-csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Import Products Csv */
+        post: operations["import_products_csv_products_import_csv_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -425,7 +477,7 @@ export interface components {
          * ApprovalStatus
          * @enum {string}
          */
-        ApprovalStatus: "pending" | "approved" | "rejected";
+        ApprovalStatus: "pending" | "approved" | "rejected" | "cancelled";
         /**
          * ApproveBidding
          * @enum {string}
@@ -792,6 +844,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+        };
+    };
+    admin_get_products_by_status_admin_products_status__stat__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                stat: components["schemas"]["ProductStatus"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductShow"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -1227,6 +1310,46 @@ export interface operations {
             };
         };
     };
+    get_my_account_users_me_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserShow"];
+                };
+            };
+        };
+    };
+    delete_my_account_users_me_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
     get_user_users__id__get: {
         parameters: {
             query?: never;
@@ -1342,12 +1465,12 @@ export interface operations {
             };
         };
     };
-    get_products_products_status__status__get: {
+    get_products_products_status__stat__get: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                status: components["schemas"]["ProductStatus"];
+                stat: components["schemas"]["ProductStatus"];
             };
             cookie?: never;
         };
@@ -1360,39 +1483,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProductShow"][];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    import_products_csv_products_import_csv_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "multipart/form-data": components["schemas"]["Body_import_products_csv_products_import_csv_post"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -1558,6 +1648,70 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProductStatusRequestShow"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    restore_product_to_draft_products__id__restore_draft_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductShow"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_products_csv_products_import_csv_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_import_products_csv_products_import_csv_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */

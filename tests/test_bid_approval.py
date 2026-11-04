@@ -90,3 +90,25 @@ def test_no_bids_to_approve(client, make_user, make_product, auth):
 @pytest.mark.parametrize("value", ["invalid", {"action": "approve"}])
 def test_invalid_approval_payload(client, value):
     assert client.post("/bids/1/approve", json=value).status_code in (401, 422)
+
+
+def test_superadmin_can_decide_any_auction(
+    client, make_user, make_product, make_bid, auth
+):
+    owner, bidder = make_user(), make_user()
+    product = make_product(owner, ProductStatus.CLOSED)
+    make_bid(product, bidder, 600)
+
+    admin_response = client.post(
+        f"/bids/{product.id}/approve",
+        params={"request": "reject"},
+        headers=auth(make_user("admin")),
+    )
+    assert admin_response.status_code == 403
+
+    response = client.post(
+        f"/bids/{product.id}/approve",
+        params={"request": "reject"},
+        headers=auth(make_user("superadmin")),
+    )
+    assert response.status_code == 200, response.text

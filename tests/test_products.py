@@ -1,5 +1,5 @@
 from app import models
-from app.enums import ProductStatus
+from app.enums import ApprovalStatus, ProductStatus
 
 
 def test_create_product(client, make_user, auth, db_session):
@@ -146,14 +146,52 @@ def test_delete_product(client, db_session, make_user, make_product, auth):
 
     # Your endpoint returns HTTP 202
     assert response.status_code == 202, response.text
+    assert response.json() == {"detail": "Product deleted successfully."}
 
     # Refresh the test session's cached objects
     db_session.expire_all()
 
-    # Verify the product was actually deleted
+    # Verify the product was soft-deleted: the row stays but the API hides it
     deleted_product = db_session.get(models.Product, product_id)
 
-    assert deleted_product is None
+    assert deleted_product.deleted_at is not None
+    assert client.get(f"/products/{product_id}", headers=auth(owner)).status_code == 404
+
+
+def test_delete_product_cancels_pending_request(
+    client, db_session, make_user, make_product, auth
+):
+    owner = make_user()
+    owner_id = owner.id
+    admin = make_user("admin")
+    product = make_product(owner)
+    request_id = client.post(
+        f"/products/{product.id}/status-request",
+        params={"request": "active"},
+        headers=auth(owner),
+    ).json()["id"]
+
+    response = client.delete(f"/products/{product.id}", headers=auth(owner))
+    assert response.status_code == 202, response.text
+
+    db_session.expire_all()
+    status_request = db_session.get(models.ProductStatusRequest, request_id)
+    assert status_request.approval_status == ApprovalStatus.CANCELLED
+    assert status_request.reviewed_by == owner_id
+    assert status_request.reviewed_at is not None
+
+    pending = client.get("/admin/status-request/pending", headers=auth(admin))
+    assert request_id not in [item["id"] for item in pending.json()]
+
+
+def test_admin_list_hides_deleted_products(client, make_user, make_product, auth):
+    owner, admin = make_user(), make_user("admin")
+    product = make_product(owner)
+    product_id = product.id
+    client.delete(f"/products/{product_id}", headers=auth(owner))
+
+    response = client.get("/admin/products/status/draft", headers=auth(admin))
+    assert product_id not in [item["id"] for item in response.json()]
 
 
 def test_request_activation(client, make_user, make_product, auth):

@@ -152,12 +152,16 @@ def delete_product(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
     repo: ProductRepository = Depends(get_product_repo),
+    status_repo: ProductStatusRequestRepository = Depends(
+        get_product_status_request_repo
+    ),
 ):
     return delete_product_service(
         db=db,
         repo=repo,
         product_id=id,
         current_user=current_user,
+        status_repo=status_repo,
     )
 
 

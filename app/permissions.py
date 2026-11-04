@@ -19,11 +19,7 @@ def require_role(allowd_roles: list[str]):
 def require_product_owner_or_admin(
     product: models.Product, current_user: models.User = Depends(get_current_user)
 ):
-    if (
-        product.owner_id != current_user.id
-        and current_user.role_name
-        and not is_admin(current_user)
-    ):
+    if product.owner_id != current_user.id and not is_admin(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to perform this action.",
