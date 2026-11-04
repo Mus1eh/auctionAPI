@@ -1,16 +1,14 @@
-import os
 from datetime import UTC, datetime, timedelta
 
-from dotenv import load_dotenv
-
 from app import models
+from app.config import SeedSettings
 from app.database import sessionLocal
 from app.enums import ProductStatus
 
-load_dotenv()
+seed_settings = SeedSettings()
 
 # Products are owned by the seeded admin by default (run app/seeders/seeds.py first).
-OWNER_USERNAME = os.environ.get("SEED_OWNER_USERNAME") or os.environ["ADMIN_USERNAME"]
+OWNER_USERNAME = seed_settings.seed_owner_username or seed_settings.admin_username
 AUCTION_DURATION = timedelta(days=7)
 
 # (name, description, start_price) -> name max 50 chars, description max 200 chars

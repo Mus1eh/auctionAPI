@@ -5,10 +5,6 @@ from pydantic import BaseModel, ConfigDict
 from app.enums import ApprovalStatus, ProductStatus
 
 
-class ProductStatusUpdate(BaseModel):
-    status: ProductStatus
-
-
 class ProductStatusRequestShow(BaseModel):
     id: int
     product_id: int

@@ -22,7 +22,7 @@ def delete_product(
     status_repo: ProductStatusRequestRepository,
 ):
     # Lock the product while validating and deleting.
-    product = repo.get_by_id_for_delete(product_id)
+    product = repo.get_by_id_for_update(product_id)
 
     if not product:
         raise HTTPException(

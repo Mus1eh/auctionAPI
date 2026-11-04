@@ -177,13 +177,15 @@ app/
   models/              SQLAlchemy models
   schemas/             Pydantic request and response models
   enums.py             Product, bid and approval statuses
+  config.py            Settings loaded from the environment and .env
   database.py          Engine and session
   oauth2.py            JWT access tokens and the current user
   refresh_token.py     Refresh token storage and rotation
   password_reset.py    Reset token handling
   permissions.py       Role and ownership checks
   routers/             auth, users, products, bids, admin
-  services/            Auction closing logic
+  services/            Business logic, one folder per area
+  repositories/        Database access, one file per area
   celery_app.py        Celery config and beat schedule
   tasks.py             Background tasks: close auctions, send emails from the outbox
   email_service.py     SMTP sending

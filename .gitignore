@@ -9,3 +9,10 @@ wheels/
 # Virtual environments
 .venv
 .env
+
+# Local artifacts
+.coverage
+htmlcov/
+celerybeat-schedule*
+auctionAPI.zip
+tests_backup/

@@ -7,17 +7,17 @@ from app.hashing import Hash
 from app.oauth2 import create_access_token
 from app.refresh_token import create_refresh_token
 from app.repositories.authentication import AuthenticationRepository
+from app.repositories.user import UserRepository
 
 
 def login(
     request: OAuth2PasswordRequestForm,
     db: Session,
-    auth_repo: AuthenticationRepository,
+    user_repo: UserRepository,
 ):
-    user = (
-        auth_repo.get_user_by_email(request.username)
-        if "@" in request.username
-        else auth_repo.get_user_by_username(request.username)
+    # The form's username field holds either an email or a username.
+    user = user_repo.get_by_email(request.username) or user_repo.get_by_username(
+        request.username
     )
 
     credential_exception = HTTPException(

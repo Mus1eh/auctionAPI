@@ -4,9 +4,10 @@ from sqlalchemy.orm import Session
 
 from app import models, schemas
 from app.database import get_db
-from app.dependencies import get_auth_repo
+from app.dependencies import get_auth_repo, get_user_repo
 from app.oauth2 import get_current_user
 from app.repositories.authentication import AuthenticationRepository
+from app.repositories.user import UserRepository
 from app.services.authentication.login import login as login_service
 from app.services.authentication.login import logout as logout_service
 from app.services.authentication.login import logout_all as logout_all_service
@@ -31,9 +32,9 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 def login(
     request: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db),
-    auth_repo: AuthenticationRepository = Depends(get_auth_repo),
+    user_repo: UserRepository = Depends(get_user_repo),
 ):
-    return login_service(request=request, db=db, auth_repo=auth_repo)
+    return login_service(request=request, db=db, user_repo=user_repo)
 
 
 @router.post("/refresh", response_model=schemas.Token)
@@ -41,12 +42,14 @@ def refresh_token(
     request: schemas.RefreshTokenRequest,
     db: Session = Depends(get_db),
     auth_repo: AuthenticationRepository = Depends(get_auth_repo),
+    user_repo: UserRepository = Depends(get_user_repo),
 ):
 
     return refresh_token_service(
         db=db,
         request=request,
         auth_repo=auth_repo,
+        user_repo=user_repo,
     )
 
 
@@ -64,9 +67,9 @@ def logout(
 def forgot_password(
     request: schemas.ForgotPasswordRequest,
     db: Session = Depends(get_db),
-    auth_repo: AuthenticationRepository = Depends(get_auth_repo),
+    user_repo: UserRepository = Depends(get_user_repo),
 ):
-    return forgot_password_service(request=request, db=db, auth_repo=auth_repo)
+    return forgot_password_service(request=request, db=db, user_repo=user_repo)
 
 
 @router.post("/reset-password")
@@ -74,8 +77,11 @@ def reset_password(
     request: schemas.ResetPasswordRequest,
     db: Session = Depends(get_db),
     auth_repo: AuthenticationRepository = Depends(get_auth_repo),
+    user_repo: UserRepository = Depends(get_user_repo),
 ):
-    return reset_password_service(request=request, db=db, auth_repo=auth_repo)
+    return reset_password_service(
+        request=request, db=db, auth_repo=auth_repo, user_repo=user_repo
+    )
 
 
 @router.post("/change-password")

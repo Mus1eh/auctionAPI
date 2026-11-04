@@ -42,6 +42,11 @@ describe('registerSchema', () => {
     const mismatch = registerSchema.safeParse({ ...valid, confirm: 'different1' })
     expect(mismatch.error?.issues[0].path).toEqual(['confirm'])
   })
+
+  it('rejects usernames containing @', () => {
+    const result = registerSchema.safeParse({ ...valid, username: 'sam@home' })
+    expect(result.error?.issues[0].message).toBe("Username cannot contain '@'")
+  })
 })
 
 describe('changePasswordSchema', () => {

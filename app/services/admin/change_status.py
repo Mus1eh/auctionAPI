@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.enums import ProductStatus
 from app.repositories.product import ProductRepository
-from app.services.auction_service import close_auction
+from app.services.auctions.close import close_auction
 
 
 def change_product_status(
@@ -15,7 +15,7 @@ def change_product_status(
     status_value: ProductStatus,
 ):
     try:
-        product = product_repo.get_by_id_for_status_change(product_id)
+        product = product_repo.get_by_id_for_update(product_id)
 
         if product is None:
             raise HTTPException(

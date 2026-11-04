@@ -42,7 +42,3 @@ class ProductPatch(BaseModel):
         if "start_price" in self.model_fields_set and self.start_price is None:
             raise ValueError("Start price cannot be None when provided.")
         return self
-
-
-class GetProductByStatus(BaseModel):
-    status: ProductStatus

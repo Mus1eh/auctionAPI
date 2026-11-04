@@ -5,17 +5,19 @@ from app import schemas
 from app.oauth2 import create_access_token
 from app.refresh_token import create_refresh_token, verify_refresh_token
 from app.repositories.authentication import AuthenticationRepository
+from app.repositories.user import UserRepository
 
 
 def refresh_token(
     request: schemas.RefreshTokenRequest,
     db: Session,
     auth_repo: AuthenticationRepository,
+    user_repo: UserRepository,
 ):
 
     db_token = verify_refresh_token(db, request.refresh_token)
 
-    user = auth_repo.get_user_by_db_token(db_token)
+    user = user_repo.get_by_id(db_token.user_id)
 
     if not user:
         raise HTTPException(

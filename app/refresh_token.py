@@ -1,17 +1,12 @@
 import hashlib
-import os
 import secrets
 from datetime import UTC, datetime, timedelta
 
-from dotenv import load_dotenv
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app import models
-
-load_dotenv()
-
-REFRESH_TOKEN_EXPIRE_DAYS = int(os.environ["REFRESH_TOKEN_EXPIRE_DAYS"])
+from app.config import settings
 
 
 def hash_token(token: str) -> str:
@@ -21,7 +16,7 @@ def hash_token(token: str) -> str:
 def create_refresh_token(db: Session, user_id: int) -> str:
     token = secrets.token_urlsafe(32)
 
-    expires_at = datetime.now(UTC) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+    expires_at = datetime.now(UTC) + timedelta(days=settings.refresh_token_expire_days)
 
     db_token = models.RefreshToken(
         user_id=user_id, token_hash=hash_token(token), expires_at=expires_at

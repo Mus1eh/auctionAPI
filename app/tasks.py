@@ -5,7 +5,7 @@ from app.celery_app import celery_app
 from app.database import sessionLocal
 from app.email_service import send_auction_email
 from app.enums import ProductStatus
-from app.services.auction_service import close_auction
+from app.services.auctions.close import close_auction
 
 
 @celery_app.task(name="app.tasks.close_expired_auctions")

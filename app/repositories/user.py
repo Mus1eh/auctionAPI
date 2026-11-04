@@ -21,6 +21,12 @@ class UserRepository:
     def get_by_id(self, user_id: int):
         return self._query().filter(models.User.id == user_id).first()
 
+    def get_by_username(self, username: str):
+        return self._query().filter(models.User.username == username).first()
+
+    def get_by_email(self, email: str):
+        return self._query().filter(models.User.email == email).first()
+
     def create(self, user: models.User):
         self.db.add(user)
         self.db.flush()
@@ -52,5 +58,5 @@ class UserRepository:
             .first()
         )
 
-    def get_by_id_for_delete(self, user_id: int):
+    def get_by_id_for_update(self, user_id: int):
         return self._query().filter(models.User.id == user_id).with_for_update().first()

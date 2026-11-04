@@ -83,7 +83,7 @@ def delete_user_by_id(
     status_repo: ProductStatusRequestRepository,
 ):
     # Lock the user while validating and deleting.
-    user_to_delete = user_repo.get_by_id_for_delete(user_id)
+    user_to_delete = user_repo.get_by_id_for_update(user_id)
     if not user_to_delete:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

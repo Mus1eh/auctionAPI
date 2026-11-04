@@ -7,10 +7,7 @@ from app import models
 from app.enums import ApprovalStatus, ProductStatus
 from app.repositories.product import ProductRepository
 from app.repositories.product_status_request import ProductStatusRequestRepository
-
-ALLOWED_TRANSITIONS = {
-    ProductStatus.DRAFT: {ProductStatus.ACTIVE},
-}
+from app.services.products.status_change import ALLOWED_TRANSITIONS
 
 
 def approve_status_request(
@@ -31,7 +28,7 @@ def approve_status_request(
             )
 
         # Lock product first.
-        product = product_repo.get_by_id_for_status_change(status_request.product_id)
+        product = product_repo.get_by_id_for_update(status_request.product_id)
 
         if product is None:
             raise HTTPException(

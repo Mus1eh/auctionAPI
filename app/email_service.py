@@ -1,29 +1,19 @@
-import os
 import smtplib
 import ssl
 from email.message import EmailMessage
 
-from dotenv import load_dotenv
-
-load_dotenv()
-
-SMTP_HOST = os.environ["SMTP_HOST"]
-SMTP_PORT = int(os.environ["SMTP_PORT"])
-SMTP_USERNAME = os.environ["SMTP_USERNAME"]
-SMTP_PASSWORD = os.environ["SMTP_PASSWORD"]
-SMTP_FROM_EMAIL = os.environ["SMTP_FROM_EMAIL"]
-FRONTEND_URL = os.environ["FRONTEND_URL"]
+from app.config import settings
 
 
 def generate_link(reset_token: str) -> str:
-    return f"{FRONTEND_URL}/reset-password?token={reset_token}"
+    return f"{settings.frontend_url}/reset-password?token={reset_token}"
 
 
 def send_password_reset_email(to_email: str, reset_token: str):
     message = EmailMessage()
 
     message["Subject"] = "Password Reset Request"
-    message["From"] = SMTP_FROM_EMAIL
+    message["From"] = settings.smtp_from_email
     message["To"] = to_email
 
     message.set_content(
@@ -44,14 +34,14 @@ def send_password_reset_email(to_email: str, reset_token: str):
     )
 
     with smtplib.SMTP(
-        SMTP_HOST,
-        SMTP_PORT,
+        settings.smtp_host,
+        settings.smtp_port,
         timeout=10,
     ) as smtp:
         smtp.starttls()
         smtp.login(
-            SMTP_USERNAME,
-            SMTP_PASSWORD,
+            settings.smtp_username,
+            settings.smtp_password,
         )
         smtp.send_message(message)
 
@@ -59,20 +49,20 @@ def send_password_reset_email(to_email: str, reset_token: str):
 def send_auction_email(to_email: str, subject: str, body: str) -> None:
     message = EmailMessage()
 
-    message["From"] = SMTP_FROM_EMAIL
+    message["From"] = settings.smtp_from_email
     message["To"] = to_email
     message["Subject"] = subject
     message.set_content(body)
 
     with smtplib.SMTP(
-        SMTP_HOST,
-        SMTP_PORT,
+        settings.smtp_host,
+        settings.smtp_port,
         timeout=20,
     ) as smtp:
         smtp.ehlo()
         smtp.starttls(context=ssl.create_default_context())
         smtp.ehlo()
 
-        smtp.login(SMTP_USERNAME, SMTP_PASSWORD)
+        smtp.login(settings.smtp_username, settings.smtp_password)
 
         smtp.send_message(message)

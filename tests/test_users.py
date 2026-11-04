@@ -57,6 +57,19 @@ def test_registration_validation(client):
     )
 
 
+def test_username_cannot_contain_at_sign(client):
+    response = client.post(
+        "/users/",
+        json={
+            "username": "sam@home",
+            "email": "sam.home@example.com",
+            "password": "StrongPassword123!",
+        },
+    )
+    assert response.status_code == 422
+    assert "Username cannot contain '@'" in response.json()["detail"][0]["msg"]
+
+
 def test_get_user_requires_admin(client, make_user, auth):
     user, other = make_user(), make_user()
     assert client.get(f"/users/{other.id}", headers=auth(user)).status_code == 403

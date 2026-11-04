@@ -2,7 +2,6 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.enums import ApproveBidding
 from app.schemas.product import ProductShow
 
 
@@ -18,10 +17,6 @@ class BidShow(BaseModel):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
-
-
-class ApproveBidRequest(BaseModel):
-    action: ApproveBidding
 
 
 class LastBidderShow(BaseModel):

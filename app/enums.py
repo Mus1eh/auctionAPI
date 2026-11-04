@@ -9,12 +9,6 @@ class ProductStatus(str, Enum):
     REJECTED = "rejected"
 
 
-class BidStatus(str, Enum):
-    PENDING = "pending"
-    ACCEPTED = "accepted"
-    REJECTED = "rejected"
-
-
 class ApprovalStatus(str, Enum):
     PENDING = "pending"
     APPROVED = "approved"
