@@ -100,10 +100,10 @@ def process_email_outbox():
 
                 print(f"Failed to send email #{email_id}: {exc}")
 
-            return {
-                "sent": sent_count,
-                "failed": failed_count,
-            }
-
         finally:
             db.close()
+
+    return {
+        "sent": sent_count,
+        "failed": failed_count,
+    }
