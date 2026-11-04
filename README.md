@@ -24,15 +24,15 @@ draft ──(owner requests, admin approves)──▶ active ──(1 hour passe
 
 ## Tech stack
 
-| Area | Tools |
-| --- | --- |
-| API | FastAPI, Pydantic v2 |
-| Database | PostgreSQL, SQLAlchemy 2 |
-| Auth | python-jose (JWT), passlib/bcrypt |
+| Area            | Tools                               |
+| --------------- | ----------------------------------- |
+| API             | FastAPI, Pydantic v2                |
+| Database        | PostgreSQL, SQLAlchemy 2            |
+| Auth            | python-jose (JWT), passlib/bcrypt   |
 | Background jobs | Celery with Redis (worker and beat) |
-| Email | SMTP |
-| Tests | pytest, httpx, pytest-cov |
-| Tooling | uv, Python 3.12+ |
+| Email           | SMTP                                |
+| Tests           | pytest, httpx, pytest-cov           |
+| Tooling         | uv, Python 3.12+                    |
 
 ## Getting started
 
@@ -59,15 +59,15 @@ cp .env.example .env
 
 Fill in `.env`:
 
-| Variable | Purpose |
-| --- | --- |
-| `SQLALCHEMY_URL` | Main database, for example `postgresql://user:pass@localhost:5432/auctionapi` |
-| `SQLALCHEMY_TEST_URL` | Separate database used only by the tests. Its name must be `auctionapi_test` |
-| `SECRET_KEY`, `ALGORITHM` | JWT signing, for example a long random string and `HS256` |
-| `ACCESS_TOKEN_EXPIRE_MINUTES`, `REFRESH_TOKEN_EXPIRE_DAYS`, `RESET_PASSWORD_TOKEN_EXPIRE_MINUTES` | Token lifetimes |
-| `SUPERADMIN_*`, `ADMIN_*` | Accounts created by the seed script |
-| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_FROM_EMAIL` | Outgoing email |
-| `FRONTEND_URL` | Base of the password reset link: `{FRONTEND_URL}/reset-password?token=...` |
+| Variable                                                                                          | Purpose                                                                       |
+| ------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `SQLALCHEMY_URL`                                                                                  | Main database, for example `postgresql://user:pass@localhost:5432/auctionapi` |
+| `SQLALCHEMY_TEST_URL`                                                                             | Separate database used only by the tests. Its name must be `auctionapi_test`  |
+| `SECRET_KEY`, `ALGORITHM`                                                                         | JWT signing, for example a long random string and `HS256`                     |
+| `ACCESS_TOKEN_EXPIRE_MINUTES`, `REFRESH_TOKEN_EXPIRE_DAYS`, `RESET_PASSWORD_TOKEN_EXPIRE_MINUTES` | Token lifetimes                                                               |
+| `SUPERADMIN_*`, `ADMIN_*`                                                                         | Accounts created by the seed script                                           |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_FROM_EMAIL`                     | Outgoing email                                                                |
+| `FRONTEND_URL`                                                                                    | Base of the password reset link: `{FRONTEND_URL}/reset-password?token=...`    |
 
 ### 4. Create the tables and seed data
 
@@ -106,52 +106,57 @@ Interactive API docs are at **http://localhost:8000/docs**.
 Endpoints marked 🔒 need an `Authorization: Bearer <access_token>` header.
 
 ### Auth: `/auth`
-| Method | Path | Description |
-| --- | --- | --- |
-| POST | `/auth/` | Log in. Form data with `username` (or email) and `password`. Returns access and refresh tokens |
-| POST | `/auth/refresh` | Swap a refresh token for a new token pair. The old refresh token is revoked |
-| POST | `/auth/logout` | Revoke a refresh token |
-| POST | `/auth/logout-all` 🔒 | Revoke all of the user's sessions |
-| POST | `/auth/change-password` 🔒 | Change password |
-| POST | `/auth/forgot-password` | Email a reset link |
-| POST | `/auth/verify-token` | Check that a reset token is valid |
-| POST | `/auth/reset-password` | Set a new password with a reset token |
+
+| Method | Path                       | Description                                                                                    |
+| ------ | -------------------------- | ---------------------------------------------------------------------------------------------- |
+| POST   | `/auth/`                   | Log in. Form data with `username` (or email) and `password`. Returns access and refresh tokens |
+| POST   | `/auth/refresh`            | Swap a refresh token for a new token pair. The old refresh token is revoked                    |
+| POST   | `/auth/logout`             | Revoke a refresh token                                                                         |
+| POST   | `/auth/logout-all` 🔒      | Revoke all of the user's sessions                                                              |
+| POST   | `/auth/change-password` 🔒 | Change password                                                                                |
+| POST   | `/auth/forgot-password`    | Email a reset link                                                                             |
+| POST   | `/auth/verify-token`       | Check that a reset token is valid                                                              |
+| POST   | `/auth/reset-password`     | Set a new password with a reset token                                                          |
 
 ### Users: `/users`
-| Method | Path | Description |
-| --- | --- | --- |
-| POST | `/users/` | Sign up |
-| GET | `/users/{id}` 🔒 | Get a user (admin only) |
+
+| Method | Path             | Description                                                |
+| ------ | ---------------- | ---------------------------------------------------------- |
+| POST   | `/users/`        | Sign up                                                    |
+| GET    | `/users/{id}` 🔒 | Get a user (admin only)                                    |
 | DELETE | `/users/{id}` 🔒 | Delete your own account, or any regular user's as an admin |
 
 ### Products: `/products`
-| Method | Path | Description |
-| --- | --- | --- |
-| POST | `/products/` 🔒 | Create a product (starts as `draft`) |
-| POST | `/products/import-csv` 🔒 | Bulk create from a CSV with `name,description,start_price` columns (max 2 MB) |
-| GET | `/products/my` 🔒 | List your products |
-| GET | `/products/status/{status}` | List products by status |
-| GET | `/products/{id}` | Get a product |
-| PUT / PATCH | `/products/{id}` 🔒 | Update a product, fully or partially (owner or admin) |
-| DELETE | `/products/{id}` 🔒 | Delete a product (owner or admin) |
-| POST | `/products/{id}/status-request?request=active` 🔒 | Ask an admin to start the auction |
+
+| Method      | Path                                              | Description                                                                   |
+| ----------- | ------------------------------------------------- | ----------------------------------------------------------------------------- |
+| POST        | `/products/` 🔒                                   | Create a product (starts as `draft`)                                          |
+| POST        | `/products/import-csv` 🔒                         | Bulk create from a CSV with `name,description,start_price` columns (max 2 MB) |
+| GET         | `/products/my` 🔒                                 | List your products                                                            |
+| GET         | `/products/status/{status}`                       | List products by status                                                       |
+| GET         | `/products/{id}`                                  | Get a product                                                                 |
+| PUT / PATCH | `/products/{id}` 🔒                               | Update a product, fully or partially (owner or admin)                         |
+| DELETE      | `/products/{id}` 🔒                               | Delete a product (owner or admin)                                             |
+| POST        | `/products/{id}/status-request?request=active` 🔒 | Ask an admin to start the auction                                             |
 
 ### Bids: `/bids`
-| Method | Path | Description |
-| --- | --- | --- |
-| POST | `/bids/{product_id}` 🔒 | Place a bid, with `{ "amount": 150 }` |
-| GET | `/bids/{product_id}?page=1&limit=20` | Bid history, newest first |
-| POST | `/bids/{product_id}/approve?request=approve\|reject` 🔒 | Owner or superadmin accepts or rejects the highest bid after the auction closes |
+
+| Method | Path                                                    | Description                                                                     |
+| ------ | ------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| POST   | `/bids/{product_id}` 🔒                                 | Place a bid, with `{ "amount": 150 }`                                           |
+| GET    | `/bids/{product_id}?page=1&limit=20`                    | Bid history, newest first                                                       |
+| POST   | `/bids/{product_id}/approve?request=approve\|reject` 🔒 | Owner or superadmin accepts or rejects the highest bid after the auction closes |
 
 ### Admin: `/admin` 🔒 (admin or superadmin)
-| Method | Path | Description |
-| --- | --- | --- |
-| GET | `/admin/dashboard` | Returns the current user's username and role |
-| GET | `/admin/status-request/pending` | List pending go-live requests |
-| PATCH | `/admin/status-requests/{id}/approve` | Approve a request, which starts the 1-hour auction |
-| PATCH | `/admin/status-requests/{id}/reject` | Reject a request |
-| POST | `/admin/products/{id}/status/{active\|closed}` | Start or close an auction directly |
-| PATCH | `/admin/users/{id}/role` | Set a user's role to `user` or `admin` (superadmin only) |
+
+| Method | Path                                           | Description                                              |
+| ------ | ---------------------------------------------- | -------------------------------------------------------- |
+| GET    | `/admin/dashboard`                             | Returns the current user's username and role             |
+| GET    | `/admin/status-request/pending`                | List pending go-live requests                            |
+| PATCH  | `/admin/status-requests/{id}/approve`          | Approve a request, which starts the 1-hour auction       |
+| PATCH  | `/admin/status-requests/{id}/reject`           | Reject a request                                         |
+| POST   | `/admin/products/{id}/status/{active\|closed}` | Start or close an auction directly                       |
+| PATCH  | `/admin/users/{id}/role`                       | Set a user's role to `user` or `admin` (superadmin only) |
 
 ## Running the tests
 
@@ -169,8 +174,8 @@ Add coverage with `--cov=app --cov-report=html`. The report goes to `htmlcov/`. 
 ```
 app/
   main.py              FastAPI app and router registration
-  models.py            SQLAlchemy models
-  schemas.py           Pydantic request and response models
+  models/              SQLAlchemy models
+  schemas/             Pydantic request and response models
   enums.py             Product, bid and approval statuses
   database.py          Engine and session
   oauth2.py            JWT access tokens and the current user
