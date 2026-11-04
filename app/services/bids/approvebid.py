@@ -31,7 +31,7 @@ def approve_bid(
         if product.owner_id != current_user.id and not is_superadmin(current_user):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Only the owner of the product can approve or reject bids",
+                detail="Only the owner or a superadmin can approve or reject bids",
             )
 
         if product.status == ProductStatus.SOLD:

@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import { isApiError } from '@/api/client'
 import { useDecideBid, useDeleteProduct, useRequestGoLive } from '@/api/queries'
 import type { Bid, BidDecision, Product } from '@/api/types'
+import { useAuth } from '@/auth/AuthContext'
 import { Alert } from '@/components/ui/Alert'
 import { Button } from '@/components/ui/Button'
 import { buttonClasses } from '@/components/ui/buttonStyles'
@@ -91,7 +92,7 @@ function BidDecisionPanel({ product, topBid }: { product: Product; topBid: Bid |
           </Button>
         )}
       </div>
-      {product.status === 'rejected' && <p className="text-xs text-stone-500">You declined this bid earlier. You can still accept it.</p>}
+      {product.status === 'rejected' && <p className="text-xs text-stone-500">This bid was declined earlier. You can still accept it.</p>}
       <ConfirmDialog
         open={pending !== null}
         title={pending === 'approve' ? 'Accept the highest bid?' : 'Decline the highest bid?'}
@@ -111,6 +112,7 @@ function BidDecisionPanel({ product, topBid }: { product: Product; topBid: Bid |
 }
 
 export function ManageListing({ product, isOwner, topBid }: { product: Product; isOwner: boolean; topBid: Bid | undefined }) {
+  const { isSuperadmin } = useAuth()
   const navigate = useNavigate()
   const remove = useDeleteProduct()
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -118,7 +120,7 @@ export function ManageListing({ product, isOwner, topBid }: { product: Product; 
   return (
     <div className="space-y-4">
       {isOwner && product.status === 'draft' && <GoLiveRequest product={product} />}
-      {isOwner && (product.status === 'closed' || product.status === 'rejected') && <BidDecisionPanel product={product} topBid={topBid} />}
+      {(isOwner || isSuperadmin) && (product.status === 'closed' || product.status === 'rejected') && <BidDecisionPanel product={product} topBid={topBid} />}
       <div className="flex gap-2">
         <Link to={`/products/${product.id}/edit`} className={buttonClasses({ variant: 'secondary', className: 'flex-1' })}>
           <Pencil className="size-4" aria-hidden /> Edit
