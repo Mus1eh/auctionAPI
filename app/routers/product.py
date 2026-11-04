@@ -27,13 +27,6 @@ router = APIRouter(
     tags=["Products"],
 )
 
-# ONLY THE OWNER CAN SEE THESE (ADMINS SEE EVERYONE'S FROM THE ADMIN DASHBOARD)
-PRIVATE_STATUSES = (ProductStatus.DRAFT, ProductStatus.REJECTED)
-
-EDITABLE_STATUSES = (ProductStatus.DRAFT, ProductStatus.REJECTED)
-
-CLIENT_EDITABLE_FIELDS = ("name", "description", "start_price")
-
 
 # CREATE PRODUCT
 @router.post(

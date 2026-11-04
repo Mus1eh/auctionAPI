@@ -13,6 +13,35 @@ def test_login_with_username_and_email(client, make_user):
         assert response.json()["refresh_token"]
 
 
+def test_existing_account_with_at_sign_in_username_can_login(
+    client, db_session, make_user
+):
+    # NEW USERNAMES CAN'T CONTAIN @, BUT ACCOUNTS FROM BEFORE THAT RULE MUST KEEP WORKING
+    user = make_user()
+    user.username = "sam@home"
+    db_session.flush()
+
+    for identifier in (user.username, user.email):
+        response = client.post(
+            "/auth/", data={"username": identifier, "password": "TestPassword123!"}
+        )
+        assert response.status_code == 200, response.text
+
+
+def test_email_owner_can_login_when_old_username_matches_their_email(
+    client, db_session, make_user
+):
+    owner, lookalike = make_user(), make_user()
+    owner.email = "owner@example.com"
+    lookalike.username = owner.email
+    db_session.flush()
+
+    response = client.post(
+        "/auth/", data={"username": owner.email, "password": "TestPassword123!"}
+    )
+    assert response.status_code == 200, response.text
+
+
 def test_invalid_credentials(client, make_user):
     user = make_user()
     for username, password in [("missing", "wrong"), (user.username, "wrong")]:

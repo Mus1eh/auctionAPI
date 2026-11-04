@@ -80,14 +80,6 @@ class ProductRepository:
         self.db.flush()
         return product
 
-    def get_by_id_for_delete(self, product_id: int):
-        return (
-            self._query()
-            .filter(models.Product.id == product_id)
-            .with_for_update()
-            .first()
-        )
-
     def restore(self, product: models.Product):
         product.deleted_at = None
         self.db.flush()
@@ -115,14 +107,6 @@ class ProductRepository:
 
         self.db.flush()
         return product
-
-    def get_by_id_for_status_change(self, product_id: int):
-        return (
-            self._query()
-            .filter(models.Product.id == product_id)
-            .with_for_update()
-            .first()
-        )
 
     def create_bulk(self, products: list[models.Product]):
         self.db.add_all(products)

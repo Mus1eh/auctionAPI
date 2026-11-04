@@ -11,33 +11,6 @@ class AuthenticationRepository:
     def __init__(self, db: Session):
         self.db = db
 
-    def _query(self, include_deleted: bool = False):
-        query = self.db.query(models.User)
-
-        if not include_deleted:
-            query = query.filter(models.User.deleted_at.is_(None))
-
-        return query
-
-    def get_user_by_username(self, username: str, include_deleted: bool = False):
-        return (
-            self._query(include_deleted)
-            .filter(models.User.username == username)
-            .first()
-        )
-
-    def get_user_by_email(self, email: str, include_deleted: bool = False):
-        return self._query(include_deleted).filter(models.User.email == email).first()
-
-    def get_user_by_db_token(
-        self, db_token: models.RefreshToken, include_deleted: bool = False
-    ):
-        return (
-            self._query(include_deleted)
-            .filter(models.User.id == db_token.user_id)
-            .first()
-        )
-
     def refresh_token_update(self, db_token: models.RefreshToken):
         result = self.db.execute(
             update(models.RefreshToken)

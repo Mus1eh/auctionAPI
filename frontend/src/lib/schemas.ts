@@ -30,7 +30,12 @@ const password = z.string().min(8, 'Password must be at least 8 characters')
 
 export const registerSchema = z
   .object({
-    username: z.string().trim().min(3, 'Username must be at least 3 characters').max(50, 'Username must be at most 50 characters'),
+    username: z
+      .string()
+      .trim()
+      .min(3, 'Username must be at least 3 characters')
+      .max(50, 'Username must be at most 50 characters')
+      .refine((value) => !value.includes('@'), "Username cannot contain '@'"),
     email: z.email('Enter a valid email address').max(100, 'Email must be at most 100 characters'),
     password,
     confirm: z.string(),

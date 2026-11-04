@@ -1,26 +1,19 @@
-import os
 import secrets
 from datetime import UTC, datetime, timedelta
 
-from dotenv import load_dotenv
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app import models
+from app.config import settings
 from app.refresh_token import hash_token
-
-load_dotenv()
-
-RESET_PASSWORD_TOKEN_EXPIRE_MINUTES = int(
-    os.environ["RESET_PASSWORD_TOKEN_EXPIRE_MINUTES"]
-)
 
 
 def create_password_reset_token(db: Session, user_id: int) -> str:
     token = secrets.token_urlsafe(32)
 
     expires_at = datetime.now(UTC) + timedelta(
-        minutes=RESET_PASSWORD_TOKEN_EXPIRE_MINUTES
+        minutes=settings.reset_password_token_expire_minutes
     )
 
     db_token = models.PasswordResetToken(

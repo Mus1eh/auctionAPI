@@ -6,14 +6,15 @@ from app.email_service import send_password_reset_email
 from app.hashing import Hash
 from app.password_reset import create_password_reset_token, verify_password_reset_token
 from app.repositories.authentication import AuthenticationRepository
+from app.repositories.user import UserRepository
 
 
 def forgot_password(
     request: schemas.ForgotPasswordRequest,
     db: Session,
-    auth_repo: AuthenticationRepository,
+    user_repo: UserRepository,
 ):
-    user = auth_repo.get_user_by_email(request.email)
+    user = user_repo.get_by_email(request.email)
     if user:
         try:
             token = create_password_reset_token(db, user.id)
@@ -32,10 +33,11 @@ def reset_password(
     request: schemas.ResetPasswordRequest,
     db: Session,
     auth_repo: AuthenticationRepository,
+    user_repo: UserRepository,
 ):
     db_token = verify_password_reset_token(db, request.token)
 
-    user = auth_repo.get_user_by_db_token(db_token)
+    user = user_repo.get_by_id(db_token.user_id)
 
     if not user:
         raise HTTPException(

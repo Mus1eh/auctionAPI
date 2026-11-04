@@ -15,7 +15,7 @@ def restore_draft(
     current_user: models.User,
 ):
     try:
-        product = repo.get_by_id_for_status_change(product_id)
+        product = repo.get_by_id_for_update(product_id)
 
         if product is None:
             raise HTTPException(

@@ -25,7 +25,7 @@ def reject_status_request(
                 detail="Status request not found.",
             )
 
-        product = product_repo.get_by_id_for_status_change(status_request.product_id)
+        product = product_repo.get_by_id_for_update(status_request.product_id)
 
         if product is None:
             raise HTTPException(
