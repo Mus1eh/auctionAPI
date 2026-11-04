@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app import models, schemas
 from app.database import get_db
 from app.dependencies import (
+    get_email_outbox_repo,
     get_product_repo,
     get_product_status_request_repo,
     get_user_repo,
@@ -11,6 +12,7 @@ from app.dependencies import (
 from app.enums import ProductStatus
 from app.oauth2 import get_current_user
 from app.permissions import require_role
+from app.repositories.email_outbox import EmailOutboxRepository
 from app.repositories.product import ProductRepository
 from app.repositories.product_status_request import ProductStatusRequestRepository
 from app.repositories.user import UserRepository
@@ -127,12 +129,14 @@ def admin_change_product_status(
     status_value: ProductStatus,
     db: Session = Depends(get_db),
     product_repo: ProductRepository = Depends(get_product_repo),
+    outbox_repo: EmailOutboxRepository = Depends(get_email_outbox_repo),
 ):
     return change_product_status_service(
         db=db,
         product_repo=product_repo,
         product_id=product_id,
         status_value=status_value,
+        outbox_repo=outbox_repo,
     )
 
 

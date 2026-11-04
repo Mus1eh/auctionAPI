@@ -3,10 +3,11 @@ from sqlalchemy.orm import Session
 
 from app import models, schemas
 from app.database import get_db
-from app.dependencies import get_bid_repo, get_product_repo
+from app.dependencies import get_bid_repo, get_email_outbox_repo, get_product_repo
 from app.enums import ApproveBidding
 from app.oauth2 import get_current_user, get_current_user_optional
 from app.repositories.bids import BidRepository
+from app.repositories.email_outbox import EmailOutboxRepository
 from app.repositories.product import ProductRepository
 from app.services.bids.approvebid import approve_bid as approve_bid_service
 from app.services.bids.create import create_bid as create_bid_service
@@ -70,6 +71,7 @@ def approve_bid(
     current_user: models.User = Depends(get_current_user),
     bid_repo: BidRepository = Depends(get_bid_repo),
     product_repo: ProductRepository = Depends(get_product_repo),
+    outbox_repo: EmailOutboxRepository = Depends(get_email_outbox_repo),
 ):
     return approve_bid_service(
         db=db,
@@ -78,6 +80,7 @@ def approve_bid(
         current_user=current_user,
         bid_repo=bid_repo,
         product_repo=product_repo,
+        outbox_repo=outbox_repo,
     )
 
 

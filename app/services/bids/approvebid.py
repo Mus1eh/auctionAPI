@@ -6,6 +6,7 @@ from app.email_templates import bid_approved_email, bid_rejected_email
 from app.enums import ApproveBidding, ProductStatus
 from app.permissions import is_superadmin
 from app.repositories.bids import BidRepository
+from app.repositories.email_outbox import EmailOutboxRepository
 from app.repositories.product import ProductRepository
 
 ALLOWED_APPROVE_STATUSES = (ProductStatus.CLOSED, ProductStatus.REJECTED)
@@ -16,6 +17,7 @@ def approve_bid(
     request: ApproveBidding,
     bid_repo: BidRepository,
     product_repo: ProductRepository,
+    outbox_repo: EmailOutboxRepository,
     current_user: models.User,
     db: Session,
 ):
@@ -65,32 +67,26 @@ def approve_bid(
                 "username": highest_bid.bidder.username,
             }
 
-            db.add(
-                models.EmailOutbox(
-                    to_email=highest_bid.bidder.email,
-                    subject=f"Bid Approved - Product #{product.id}",
-                    body=bid_approved_email(
-                        product,
-                        highest_bid.bidder,
-                    ),
-                    status="pending",
-                )
+            outbox_repo.create(
+                to_email=highest_bid.bidder.email,
+                subject=f"Bid Approved - Product #{product.id}",
+                body=bid_approved_email(
+                    product,
+                    highest_bid.bidder,
+                ),
             )
 
         elif request == ApproveBidding.REJECT:
             product.status = ProductStatus.REJECTED
             product.winning_bid_id = None
 
-            db.add(
-                models.EmailOutbox(
-                    to_email=highest_bid.bidder.email,
-                    subject=f"Bid Rejected - Product #{product.id}",
-                    body=bid_rejected_email(
-                        product,
-                        highest_bid.bidder,
-                    ),
-                    status="pending",
-                )
+            outbox_repo.create(
+                to_email=highest_bid.bidder.email,
+                subject=f"Bid Rejected - Product #{product.id}",
+                body=bid_rejected_email(
+                    product,
+                    highest_bid.bidder,
+                ),
             )
 
         result = {

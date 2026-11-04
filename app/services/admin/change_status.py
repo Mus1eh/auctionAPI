@@ -4,6 +4,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.enums import ProductStatus
+from app.repositories.email_outbox import EmailOutboxRepository
 from app.repositories.product import ProductRepository
 from app.services.auctions.close import close_auction
 
@@ -13,6 +14,7 @@ def change_product_status(
     product_repo: ProductRepository,
     product_id: int,
     status_value: ProductStatus,
+    outbox_repo: EmailOutboxRepository,
 ):
     try:
         product = product_repo.get_by_id_for_update(product_id)
@@ -36,7 +38,7 @@ def change_product_status(
                     detail="Only active auctions can be closed.",
                 )
 
-            close_auction(db, product)
+            close_auction(db, product, outbox_repo)
 
         elif status_value == ProductStatus.ACTIVE:
             if product.status != ProductStatus.DRAFT:

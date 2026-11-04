@@ -7,9 +7,12 @@ from app.email_templates import (
     owner_auction_closed_email,
 )
 from app.enums import ProductStatus
+from app.repositories.email_outbox import EmailOutboxRepository
 
 
-def close_auction(db: Session, product: models.Product) -> None:
+def close_auction(
+    db: Session, product: models.Product, outbox_repo: EmailOutboxRepository
+) -> None:
     if product.status != ProductStatus.ACTIVE:
         raise ValueError("Only active auctions can be closed")
 
@@ -40,21 +43,15 @@ def close_auction(db: Session, product: models.Product) -> None:
 
     product.status = ProductStatus.CLOSED
 
-    db.add(
-        models.EmailOutbox(
-            to_email=auction["owner_email"],
-            subject=f"Auction Closed - Product #{product.id}",
-            body=owner_auction_closed_email(auction),
-            status="pending",
-        )
+    outbox_repo.create(
+        to_email=auction["owner_email"],
+        subject=f"Auction Closed - Product #{product.id}",
+        body=owner_auction_closed_email(auction),
     )
 
     if auction["highest_bidder_email"]:
-        db.add(
-            models.EmailOutbox(
-                to_email=auction["highest_bidder_email"],
-                subject=f"Highest Bid - Product #{product.id}",
-                body=highest_bidder_email(auction),
-                status="pending",
-            )
+        outbox_repo.create(
+            to_email=auction["highest_bidder_email"],
+            subject=f"Highest Bid - Product #{product.id}",
+            body=highest_bidder_email(auction),
         )
