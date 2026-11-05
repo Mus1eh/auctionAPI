@@ -2,15 +2,16 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from app.core.limits import INT_MAX, PRODUCT_DESCRIPTION_MAX, PRODUCT_NAME_MAX
 from app.enums import ProductStatus
 
 
 class ProductCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    name: str
-    description: str | None = None
-    start_price: int = Field(gt=0)
+    name: str = Field(min_length=1, max_length=PRODUCT_NAME_MAX)
+    description: str | None = Field(default=None, max_length=PRODUCT_DESCRIPTION_MAX)
+    start_price: int = Field(gt=0, le=INT_MAX)
 
 
 class ProductShow(BaseModel):
@@ -31,9 +32,9 @@ class ProductShow(BaseModel):
 class ProductPatch(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    name: str | None = None
-    description: str | None = None
-    start_price: int | None = Field(default=None, gt=0)
+    name: str | None = Field(default=None, min_length=1, max_length=PRODUCT_NAME_MAX)
+    description: str | None = Field(default=None, max_length=PRODUCT_DESCRIPTION_MAX)
+    start_price: int | None = Field(default=None, gt=0, le=INT_MAX)
 
     @model_validator(mode="after")
     def validate_patch(self):

@@ -3,6 +3,7 @@ from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
+from app.core.limits import PRODUCT_DESCRIPTION_MAX, PRODUCT_NAME_MAX
 from app.enums import ProductStatus
 from app.models.mixin import SoftDeleteMixin
 
@@ -11,8 +12,8 @@ class Product(SoftDeleteMixin, Base):
     __tablename__ = "products"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String(50), nullable=False)
-    description = Column(String(200))
+    name = Column(String(PRODUCT_NAME_MAX), nullable=False)
+    description = Column(String(PRODUCT_DESCRIPTION_MAX))
     start_price = Column(Integer, nullable=False)
     current_price = Column(
         Integer,

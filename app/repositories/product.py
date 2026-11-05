@@ -5,6 +5,16 @@ from sqlalchemy.orm import Session
 from app import models
 from app.enums import ProductStatus
 
+ALLOWED_FIELDS = {
+    "name",
+    "description",
+    "start_price",
+    "current_price",
+    "status",
+    "auction_started_at",
+    "auction_ends_at",
+}
+
 
 class ProductRepository:
     def __init__(self, db: Session):
@@ -103,6 +113,9 @@ class ProductRepository:
 
     def update(self, product: models.Product, data: dict):
         for key, value in data.items():
+            if key not in ALLOWED_FIELDS:
+                raise ValueError(f"Field '{key}' is not allowed to be updated.")
+
             setattr(product, key, value)
 
         self.db.flush()

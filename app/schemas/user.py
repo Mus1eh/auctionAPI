@@ -1,10 +1,18 @@
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
+from app.core.limits import (
+    EMAIL_MAX,
+    PASSWORD_MAX,
+    PASSWORD_MIN,
+    USERNAME_MAX,
+    USERNAME_MIN,
+)
+
 
 class UserCreate(BaseModel):
-    username: str = Field(min_length=3, max_length=50)
-    email: EmailStr
-    password: str = Field(min_length=8)
+    username: str = Field(min_length=USERNAME_MIN, max_length=USERNAME_MAX)
+    email: EmailStr = Field(max_length=EMAIL_MAX)
+    password: str = Field(min_length=PASSWORD_MIN, max_length=PASSWORD_MAX)
 
     @field_validator("username")
     @classmethod

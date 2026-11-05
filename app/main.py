@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+from sqlalchemy.exc import DataError
 
 from app.core.exceptions import AppError
 from app.routers import admin, authentication, bids, product, user
@@ -21,4 +22,12 @@ async def app_error_handler(request: Request, exc: AppError) -> JSONResponse:
         status_code=exc.status_code,
         content={"detail": exc.detail},
         headers=exc.headers,
+    )
+
+
+@app.exception_handler(DataError)
+async def data_error_handler(request: Request, exc: DataError) -> JSONResponse:
+    return JSONResponse(
+        status_code=422,
+        content={"detail": "The request contains a value that cannot be stored."},
     )

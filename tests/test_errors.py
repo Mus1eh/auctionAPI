@@ -75,3 +75,32 @@ def test_login_failure_keeps_its_challenge_header(client, make_user):
     assert response.status_code == 401
     assert response.json() == {"detail": "Could not validate credentials"}
     assert response.headers["www-authenticate"] == "Bearer"
+
+
+def test_a_nul_character_is_a_422_not_a_crash(client, make_user, auth):
+    # Postgres cannot store NUL, so the database refuses it. That must not become a 500.
+    owner, nul = make_user(), "ab\x00cd"
+
+    login = client.post("/auth/", data={"username": nul, "password": "whatever123"})
+    register = client.post(
+        "/users/",
+        json={
+            "username": nul,
+            "email": "nul@example.com",
+            "password": "StrongPass123!",
+        },
+    )
+    name = client.post(
+        "/products/", json={"name": nul, "start_price": 5}, headers=auth(owner)
+    )
+    description = client.post(
+        "/products/",
+        json={"name": "a", "description": nul, "start_price": 5},
+        headers=auth(owner),
+    )
+
+    for response in (login, register, name, description):
+        assert response.status_code == 422
+        assert response.json() == {
+            "detail": "The request contains a value that cannot be stored."
+        }
