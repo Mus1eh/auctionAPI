@@ -15,7 +15,7 @@ def refresh_token(
     user_repo: UserRepository,
 ):
 
-    db_token = verify_refresh_token(db, request.refresh_token)
+    db_token = verify_refresh_token(auth_repo, request.refresh_token)
 
     user = user_repo.get_by_id(db_token.user_id)
 
@@ -34,7 +34,7 @@ def refresh_token(
             detail="Failed to revoke the refresh token.",
         )
     try:
-        new_refresh_token = create_refresh_token(db, user.id)
+        new_refresh_token = create_refresh_token(auth_repo, user.id)
 
         new_access_token = create_access_token(data={"sub": user.username})
 

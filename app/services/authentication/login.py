@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from app import models, schemas
 from app.hashing import Hash
 from app.oauth2 import create_access_token
-from app.refresh_token import create_refresh_token
+from app.refresh_token import create_refresh_token, hash_token
 from app.repositories.authentication import AuthenticationRepository
 from app.repositories.user import UserRepository
 
@@ -14,6 +14,7 @@ def login(
     request: OAuth2PasswordRequestForm,
     db: Session,
     user_repo: UserRepository,
+    auth_repo: AuthenticationRepository,
 ):
     # The form's username field holds either an email or a username.
     user = user_repo.get_by_email(request.username) or user_repo.get_by_username(
@@ -31,7 +32,7 @@ def login(
         raise credential_exception
     access_token = create_access_token(data={"sub": user.username})
     try:
-        refresh_token = create_refresh_token(db, user.id)
+        refresh_token = create_refresh_token(auth_repo, user.id)
         db.commit()
     except Exception:
         db.rollback()
@@ -47,7 +48,7 @@ def logout(
     request: schemas.LogoutRequest, db: Session, auth_repo: AuthenticationRepository
 ):
     try:
-        auth_repo.logout(request)
+        auth_repo.logout(hash_token(request.refresh_token))
 
         db.commit()
 

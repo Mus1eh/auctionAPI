@@ -33,8 +33,11 @@ def login(
     request: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db),
     user_repo: UserRepository = Depends(get_user_repo),
+    auth_repo: AuthenticationRepository = Depends(get_auth_repo),
 ):
-    return login_service(request=request, db=db, user_repo=user_repo)
+    return login_service(
+        request=request, db=db, user_repo=user_repo, auth_repo=auth_repo
+    )
 
 
 @router.post("/refresh", response_model=schemas.Token)
@@ -68,8 +71,11 @@ def forgot_password(
     request: schemas.ForgotPasswordRequest,
     db: Session = Depends(get_db),
     user_repo: UserRepository = Depends(get_user_repo),
+    auth_repo: AuthenticationRepository = Depends(get_auth_repo),
 ):
-    return forgot_password_service(request=request, db=db, user_repo=user_repo)
+    return forgot_password_service(
+        request=request, db=db, user_repo=user_repo, auth_repo=auth_repo
+    )
 
 
 @router.post("/reset-password")
@@ -111,5 +117,8 @@ def logout_all_session(
 
 
 @router.post("/verify-token")
-def verify_token(request: schemas.ResetPasswordToken, db: Session = Depends(get_db)):
-    return verify_token_service(db=db, request=request)
+def verify_token(
+    request: schemas.ResetPasswordToken,
+    auth_repo: AuthenticationRepository = Depends(get_auth_repo),
+):
+    return verify_token_service(request=request, auth_repo=auth_repo)

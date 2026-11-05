@@ -3,40 +3,34 @@ import secrets
 from datetime import UTC, datetime, timedelta
 
 from fastapi import HTTPException, status
-from sqlalchemy.orm import Session
 
 from app import models
 from app.config import settings
+from app.repositories.authentication import AuthenticationRepository
 
 
 def hash_token(token: str) -> str:
     return hashlib.sha256(token.encode()).hexdigest()
 
 
-def create_refresh_token(db: Session, user_id: int) -> str:
+def create_refresh_token(auth_repo: AuthenticationRepository, user_id: int) -> str:
     token = secrets.token_urlsafe(32)
 
     expires_at = datetime.now(UTC) + timedelta(days=settings.refresh_token_expire_days)
 
-    db_token = models.RefreshToken(
-        user_id=user_id, token_hash=hash_token(token), expires_at=expires_at
-    )
-    db.add(db_token)
-    db.flush()
+    auth_repo.create_refresh_token(user_id, hash_token(token), expires_at)
     return token
 
 
-def verify_refresh_token(db: Session, token: str) -> models.RefreshToken:
+def verify_refresh_token(
+    auth_repo: AuthenticationRepository, token: str
+) -> models.RefreshToken:
     unauthorized_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Invalid refresh token",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    db_token = (
-        db.query(models.RefreshToken)
-        .filter(models.RefreshToken.token_hash == hash_token(token))
-        .first()
-    )
+    db_token = auth_repo.get_refresh_token_by_hash(hash_token(token))
 
     if not db_token:
         raise unauthorized_exception

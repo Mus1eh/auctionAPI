@@ -1,11 +1,11 @@
 from datetime import UTC, datetime
 
-from app import models
 from app.celery_app import celery_app
 from app.database import sessionLocal
 from app.email_service import send_auction_email
-from app.enums import ProductStatus
+from app.repositories.bids import BidRepository
 from app.repositories.email_outbox import EmailOutboxRepository
+from app.repositories.product import ProductRepository
 from app.services.auctions.close import close_auction
 
 
@@ -16,19 +16,12 @@ def close_expired_auctions():
     try:
         now = datetime.now(UTC)
 
-        expired_auctions = (
-            db.query(models.Product)
-            .filter(
-                models.Product.status == ProductStatus.ACTIVE,
-                models.Product.auction_ends_at <= now,
-            )
-            .with_for_update(skip_locked=True)
-            .all()
-        )
+        expired_auctions = ProductRepository(db).get_expired_active_for_update(now)
         outbox_repo = EmailOutboxRepository(db)
+        bid_repo = BidRepository(db)
 
         for product in expired_auctions:
-            close_auction(db, product, outbox_repo)
+            close_auction(db, product, outbox_repo, bid_repo)
 
         closed_count = len(expired_auctions)
 

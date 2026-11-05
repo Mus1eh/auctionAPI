@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app import models, schemas
 from app.database import get_db
 from app.dependencies import (
+    get_bid_repo,
     get_email_outbox_repo,
     get_product_repo,
     get_product_status_request_repo,
@@ -12,6 +13,7 @@ from app.dependencies import (
 from app.enums import ProductStatus
 from app.oauth2 import get_current_user
 from app.permissions import require_role
+from app.repositories.bids import BidRepository
 from app.repositories.email_outbox import EmailOutboxRepository
 from app.repositories.product import ProductRepository
 from app.repositories.product_status_request import ProductStatusRequestRepository
@@ -130,6 +132,7 @@ def admin_change_product_status(
     db: Session = Depends(get_db),
     product_repo: ProductRepository = Depends(get_product_repo),
     outbox_repo: EmailOutboxRepository = Depends(get_email_outbox_repo),
+    bid_repo: BidRepository = Depends(get_bid_repo),
 ):
     return change_product_status_service(
         db=db,
@@ -137,6 +140,7 @@ def admin_change_product_status(
         product_id=product_id,
         status_value=status_value,
         outbox_repo=outbox_repo,
+        bid_repo=bid_repo,
     )
 
 

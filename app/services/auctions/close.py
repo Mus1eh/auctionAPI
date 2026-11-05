@@ -1,4 +1,3 @@
-from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app import models
@@ -7,27 +6,22 @@ from app.email_templates import (
     owner_auction_closed_email,
 )
 from app.enums import ProductStatus
+from app.repositories.bids import BidRepository
 from app.repositories.email_outbox import EmailOutboxRepository
 
 
 def close_auction(
-    db: Session, product: models.Product, outbox_repo: EmailOutboxRepository
+    db: Session,
+    product: models.Product,
+    outbox_repo: EmailOutboxRepository,
+    bid_repo: BidRepository,
 ) -> None:
     if product.status != ProductStatus.ACTIVE:
         raise ValueError("Only active auctions can be closed")
 
-    bids_count = (
-        db.query(func.count(models.Bids.id))
-        .filter(models.Bids.product_id == product.id)
-        .scalar()
-    )
+    bids_count = bid_repo.count_by_product(product.id)
 
-    latest_bid = (
-        db.query(models.Bids)
-        .filter(models.Bids.product_id == product.id)
-        .order_by(models.Bids.id.desc())
-        .first()
-    )
+    latest_bid = bid_repo.get_latest_by_product(product.id)
 
     auction = {
         "product_id": product.id,

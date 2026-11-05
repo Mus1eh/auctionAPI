@@ -2,37 +2,27 @@ import secrets
 from datetime import UTC, datetime, timedelta
 
 from fastapi import HTTPException, status
-from sqlalchemy.orm import Session
 
-from app import models
 from app.config import settings
 from app.refresh_token import hash_token
+from app.repositories.authentication import AuthenticationRepository
 
 
-def create_password_reset_token(db: Session, user_id: int) -> str:
+def create_password_reset_token(
+    auth_repo: AuthenticationRepository, user_id: int
+) -> str:
     token = secrets.token_urlsafe(32)
 
     expires_at = datetime.now(UTC) + timedelta(
-        minutes=settings.reset_password_token_expire_minutes
+        minutes=settings.reset_password_token_expire_minutes,
     )
 
-    db_token = models.PasswordResetToken(
-        user_id=user_id, token_hash=hash_token(token), expires_at=expires_at
-    )
-
-    db.add(db_token)
-    db.flush()
+    auth_repo.create_password_reset_token(user_id, hash_token(token), expires_at)
     return token
 
 
-def verify_password_reset_token(db: Session, token: str):
-    token_hash = hash_token(token)
-
-    db_token = (
-        db.query(models.PasswordResetToken)
-        .filter(models.PasswordResetToken.token_hash == token_hash)
-        .first()
-    )
+def verify_password_reset_token(auth_repo: AuthenticationRepository, token: str):
+    db_token = auth_repo.get_password_reset_token_by_hash(hash_token(token))
 
     if not db_token:
         raise HTTPException(

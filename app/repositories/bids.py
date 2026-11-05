@@ -1,3 +1,4 @@
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app import models
@@ -27,5 +28,20 @@ class BidRepository:
             self.db.query(models.Bids)
             .filter(models.Bids.product_id == product_id)
             .order_by(models.Bids.amount.desc(), models.Bids.id.desc())
+            .first()
+        )
+
+    def count_by_product(self, product_id: int) -> int:
+        return (
+            self.db.query(func.count(models.Bids.id))
+            .filter(models.Bids.product_id == product_id)
+            .scalar()
+        )
+
+    def get_latest_by_product(self, product_id: int):
+        return (
+            self.db.query(models.Bids)
+            .filter(models.Bids.product_id == product_id)
+            .order_by(models.Bids.id.desc())
             .first()
         )

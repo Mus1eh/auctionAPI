@@ -4,7 +4,10 @@ from sqlalchemy.orm import Session
 from app import models, schemas
 from app.email_service import send_password_reset_email
 from app.hashing import Hash
-from app.password_reset import create_password_reset_token, verify_password_reset_token
+from app.password_reset import (
+    create_password_reset_token,
+    verify_password_reset_token,
+)
 from app.repositories.authentication import AuthenticationRepository
 from app.repositories.user import UserRepository
 
@@ -13,11 +16,12 @@ def forgot_password(
     request: schemas.ForgotPasswordRequest,
     db: Session,
     user_repo: UserRepository,
+    auth_repo: AuthenticationRepository,
 ):
     user = user_repo.get_by_email(request.email)
     if user:
         try:
-            token = create_password_reset_token(db, user.id)
+            token = create_password_reset_token(auth_repo, user.id)
             db.commit()
 
         except Exception:
@@ -35,7 +39,7 @@ def reset_password(
     auth_repo: AuthenticationRepository,
     user_repo: UserRepository,
 ):
-    db_token = verify_password_reset_token(db, request.token)
+    db_token = verify_password_reset_token(auth_repo, request.token)
 
     user = user_repo.get_by_id(db_token.user_id)
 
@@ -126,8 +130,10 @@ def change_password(
     return {"message": "Password has been changed successfully"}
 
 
-def verify_token(request: schemas.ResetPasswordToken, db: Session):
+def verify_token(
+    request: schemas.ResetPasswordToken, auth_repo: AuthenticationRepository
+):
 
-    db_token = verify_password_reset_token(db, request.reset_token)
+    db_token = verify_password_reset_token(auth_repo, request.reset_token)
 
     return db_token

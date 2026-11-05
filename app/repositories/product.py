@@ -112,3 +112,14 @@ class ProductRepository:
         self.db.add_all(products)
         self.db.flush()
         return products
+
+    def get_expired_active_for_update(self, now: datetime):
+        return (
+            self._query()
+            .filter(
+                models.Product.status == ProductStatus.ACTIVE,
+                models.Product.auction_ends_at <= now,
+            )
+            .with_for_update(skip_locked=True)
+            .all()
+        )
