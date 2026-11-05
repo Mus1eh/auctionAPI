@@ -69,7 +69,7 @@ class NotProductOwnerError(ForbiddenError):
 
 
 class ProductNotFoundError(NotFoundError):
-    default_detail = "Product not found."
+    default_detail = "Product is not found."
 
 
 class UserNotFoundError(NotFoundError):
@@ -77,7 +77,11 @@ class UserNotFoundError(NotFoundError):
 
 
 class StatusRequestNotFoundError(NotFoundError):
-    default_detail = "Status request not found."
+    default_detail = "Status request is not found."
+
+
+class SameStatusError(ConflictError):
+    default_detail = "The requested status is the same as the current status."
 
 
 class StatusRequestProductChangedError(ConflictError):

@@ -6,6 +6,7 @@ from app.core.exceptions import (
     ConflictError,
     ForbiddenError,
     NotFoundError,
+    UserNotFoundError,
 )
 from app.core.policies import is_superadmin
 from app.repositories.user import UserRepository
@@ -28,7 +29,7 @@ def change_user_role(
         user = user_repo.get_by_id_for_update(user_id)
 
         if user is None:
-            raise NotFoundError("User not found.")
+            raise UserNotFoundError()
 
         if is_superadmin(user):
             raise ForbiddenError("You cannot change the role of a superadmin.")
@@ -39,7 +40,7 @@ def change_user_role(
         role = user_repo.get_role_by_name(request.role_name)
 
         if not role:
-            raise NotFoundError("Role not found.")
+            raise NotFoundError("Role is not found.")
 
         new_user_role = user_repo.update_role(user, role)
 

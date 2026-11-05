@@ -59,7 +59,7 @@ def test_named_errors_carry_their_status_message_and_headers():
 
     response = make_client(exceptions.ProductNotFoundError()).get("/boom")
     assert response.status_code == 404
-    assert response.json() == {"detail": "Product not found."}
+    assert response.json() == {"detail": "Product is not found."}
 
 
 def test_a_message_can_override_a_named_errors_default():

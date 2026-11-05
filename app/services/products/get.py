@@ -1,5 +1,10 @@
 from app import models
-from app.core.exceptions import BEARER_CHALLENGE, NotFoundError, UnauthorizedError
+from app.core.exceptions import (
+    BEARER_CHALLENGE,
+    NotFoundError,
+    ProductNotFoundError,
+    UnauthorizedError,
+)
 from app.core.policies import is_admin
 from app.enums import ProductStatus
 from app.repositories.product import ProductRepository
@@ -18,13 +23,13 @@ def get_product(
     product = repo.get_by_id(product_id)
 
     if product is None:
-        raise NotFoundError("Product is not found.")
+        raise ProductNotFoundError()
 
     if product.status in PRIVATE_STATUSES:  # noqa
         if current_user is None or (
             not is_admin(current_user) and product.owner_id != current_user.id
         ):
-            raise NotFoundError("Product is not found.")
+            raise ProductNotFoundError()
 
     return product
 
@@ -36,7 +41,7 @@ def get_my_product(
     products = repo.get_by_owner(current_user.id)
 
     if not products:
-        raise NotFoundError("Product is not found.")
+        raise ProductNotFoundError()
     return products
 
 

@@ -3,7 +3,11 @@ from datetime import UTC, datetime
 from sqlalchemy.orm import Session
 
 from app import models, schemas
-from app.core.exceptions import ConflictError, ForbiddenError, NotFoundError
+from app.core.exceptions import (
+    ConflictError,
+    ForbiddenError,
+    ProductNotFoundError,
+)
 from app.enums import ProductStatus
 from app.repositories.bids import BidRepository
 from app.repositories.product import ProductRepository
@@ -22,7 +26,7 @@ def create_bid(
         product = product_repo.get_by_id_for_update(product_id)
 
         if not product:
-            raise NotFoundError(f"Product with id {product_id} not found")
+            raise ProductNotFoundError()
 
         if product.status != ProductStatus.ACTIVE:
             raise ConflictError(

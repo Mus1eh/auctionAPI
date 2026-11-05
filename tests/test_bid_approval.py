@@ -27,7 +27,7 @@ def test_cannot_approve_active_auction(client, make_user, make_product, auth):
             params={"request": "approve"},
             headers=auth(owner),
         ).status_code
-        == 403
+        == 409
     )
 
 
@@ -57,7 +57,7 @@ def test_approve_highest_bid(
             params={"request": "approve"},
             headers=auth(owner),
         ).status_code
-        == 403
+        == 409
     )
 
 

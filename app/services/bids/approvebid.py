@@ -1,7 +1,12 @@
 from sqlalchemy.orm import Session
 
 from app import models, schemas
-from app.core.exceptions import ForbiddenError, NotFoundError
+from app.core.exceptions import (
+    ConflictError,
+    ForbiddenError,
+    NotFoundError,
+    ProductNotFoundError,
+)
 from app.core.policies import is_superadmin
 from app.enums import ApproveBidding, ProductStatus
 from app.mailer.templates import bid_approved_email, bid_rejected_email
@@ -25,7 +30,7 @@ def approve_bid(
         product = product_repo.get_by_id_for_update(product_id)
 
         if not product:
-            raise NotFoundError(f"Product with id {product_id} not found")
+            raise ProductNotFoundError()
 
         if product.owner_id != current_user.id and not is_superadmin(current_user):
             raise ForbiddenError(
@@ -33,10 +38,10 @@ def approve_bid(
             )
 
         if product.status == ProductStatus.SOLD:
-            raise ForbiddenError("Bidding has already been approved for this product.")
+            raise ConflictError("Bidding has already been approved for this product.")
 
         if product.status not in ALLOWED_APPROVE_STATUSES:
-            raise ForbiddenError(
+            raise ConflictError(
                 "Only closed or rejected products can be approved or rejected."
             )
 

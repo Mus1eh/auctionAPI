@@ -122,7 +122,7 @@ def change_password(
 def verify_token(
     request: schemas.ResetPasswordToken, auth_repo: AuthenticationRepository
 ):
+    # Raises the same errors as reset_password when the token is unknown, used or expired.
+    verify_password_reset_token(auth_repo, request.reset_token)
 
-    db_token = verify_password_reset_token(auth_repo, request.reset_token)
-
-    return db_token
+    return {"message": "Password reset token is valid"}

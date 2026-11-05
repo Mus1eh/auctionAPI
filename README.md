@@ -115,7 +115,7 @@ Endpoints marked 🔒 need an `Authorization: Bearer <access_token>` header.
 | POST   | `/auth/logout-all` 🔒      | Revoke all of the user's sessions                                                              |
 | POST   | `/auth/change-password` 🔒 | Change password                                                                                |
 | POST   | `/auth/forgot-password`    | Email a reset link                                                                             |
-| POST   | `/auth/verify-token`       | Check that a reset token is valid                                                              |
+| POST   | `/auth/verify-token`       | Check a reset token before showing the form: `200` if usable, `400` if unknown, used or expired |
 | POST   | `/auth/reset-password`     | Set a new password with a reset token                                                          |
 
 ### Users: `/users`
@@ -191,6 +191,21 @@ app/
 tests/                 pytest suite
 frontend/              React frontend (main branch only, see frontend/README.md)
 ```
+
+## Error responses
+
+Every error is `{"detail": ...}`. Services raise the errors in `app/core/exceptions.py` and one handler in `app/main.py` turns them into responses.
+
+| Code | Used when |
+| --- | --- |
+| `400` | The request itself is wrong whatever the state: bad value, wrong password, unknown, used or expired reset token, bad CSV |
+| `401` | Not signed in, or the credentials or refresh token are invalid |
+| `403` | Signed in but not allowed, because of your role or ownership, never because of the item's state |
+| `404` | The thing doesn't exist, or is hidden from you on purpose (other people's drafts and rejected products) |
+| `409` | The request is fine and you are allowed, but the item's current state doesn't permit it: already pending, already processed, not active, has bids, same status |
+| `413` / `422` | CSV too large / field-level validation |
+
+A missing thing always has the same wording: `Product is not found.`, `User is not found.`, `Status request is not found.`
 
 ## Notes
 

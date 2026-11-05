@@ -2,11 +2,11 @@ from sqlalchemy.orm import Session
 
 from app import models
 from app.core.exceptions import (
-    BadRequestError,
     ConflictError,
     ForbiddenError,
     NotProductOwnerError,
     ProductNotFoundError,
+    SameStatusError,
 )
 from app.enums import ApprovalStatus, ProductStatus
 from app.repositories.product import ProductRepository
@@ -40,9 +40,7 @@ def request_status_change(
             raise ConflictError("There is already a pending request for this product.")
 
         if request == product.status:
-            raise BadRequestError(
-                "The requested status is the same as the current status."
-            )
+            raise SameStatusError()
 
         if request == ProductStatus.CLOSED:
             raise ForbiddenError(
@@ -50,7 +48,7 @@ def request_status_change(
             )
 
         if request not in ALLOWED_TRANSITIONS.get(product.status, set()):
-            raise BadRequestError("Invalid product status transition.")
+            raise ConflictError("Invalid product status transition.")
 
         new_request = models.ProductStatusRequest(
             product_id=product.id,

@@ -1,4 +1,5 @@
 import { screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { tokenStore } from '@/api/tokens'
 import type { Bid, Product } from '@/api/types'
 import { useAuth } from '@/auth/AuthContext'
@@ -59,5 +60,37 @@ describe('ManageListing bid decision', () => {
     renderListing(false)
     await screen.findByText('session ready')
     expect(screen.queryByRole('button', { name: /accept & sell/i })).not.toBeInTheDocument()
+  })
+})
+
+describe('ManageListing go-live request', () => {
+  const draft: Product = { ...product, status: 'draft', auction_started_at: null, auction_ends_at: null }
+
+  afterEach(() => {
+    tokenStore.clear()
+    vi.unstubAllGlobals()
+  })
+
+  async function requestGoLive(conflict: string) {
+    tokenStore.setTokens({ access_token: 'x', refresh_token: 'r1' })
+    mockFetch({
+      'POST /auth/refresh': { access_token: fakeJwt('owner'), refresh_token: 'r2', token_type: 'bearer' },
+      'GET /admin/dashboard': jsonResponse({}, 403),
+      'POST /products/7/status-request': jsonResponse({ detail: conflict }, 409),
+    })
+    renderApp(<ManageListing product={draft} isOwner topBid={undefined} />, { route: '/products/7', path: '/products/:id' })
+    await userEvent.click(await screen.findByRole('button', { name: /request to go live/i }))
+  }
+
+  it('says a request is pending when the API reports one', async () => {
+    await requestGoLive('There is already a pending request for this product.')
+    expect(await screen.findByText(/already pending/i)).toBeInTheDocument()
+  })
+
+  it('shows the real message for any other conflict', async () => {
+    await requestGoLive('The requested status is the same as the current status.')
+    expect(await screen.findByText('The requested status is the same as the current status.')).toBeInTheDocument()
+    expect(screen.queryByText(/already pending/i)).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /request to go live/i })).toBeInTheDocument()
   })
 })

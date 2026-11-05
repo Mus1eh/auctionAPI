@@ -1,5 +1,8 @@
+from datetime import UTC, datetime, timedelta
+
 from app import models
 from app.core.security import Hash
+from app.services.authentication.refresh_tokens import hash_token
 
 
 def test_login_with_username_and_email(client, make_user):
@@ -206,3 +209,58 @@ def test_invalid_reset_token(client):
     assert client.post(
         "/auth/verify-token", json={"reset_token": "invalid"}
     ).status_code in (400, 401)
+
+
+def make_reset_token(
+    db_session, user, raw="reset-token", expires_in=timedelta(hours=1), used=False
+):
+    db_session.add(
+        models.PasswordResetToken(
+            user_id=user.id,
+            token_hash=hash_token(raw),
+            expires_at=datetime.now(UTC) + expires_in,
+            used_at=datetime.now(UTC) if used else None,
+        )
+    )
+    db_session.flush()
+    return raw
+
+
+def verify(client, token):
+    return client.post("/auth/verify-token", json={"reset_token": token})
+
+
+def test_verify_token_accepts_a_valid_token_and_leaks_nothing(
+    client, db_session, make_user
+):
+    raw = make_reset_token(db_session, make_user())
+
+    response = verify(client, raw)
+
+    assert response.status_code == 200, response.text
+    assert response.json() == {"message": "Password reset token is valid"}
+
+
+def test_verify_token_rejects_an_expired_token(client, db_session, make_user):
+    raw = make_reset_token(db_session, make_user(), expires_in=-timedelta(minutes=1))
+
+    response = verify(client, raw)
+
+    assert response.status_code == 400
+    assert response.json() == {"detail": "Password reset token has expired"}
+
+
+def test_verify_token_rejects_a_used_token(client, db_session, make_user):
+    raw = make_reset_token(db_session, make_user(), used=True)
+
+    response = verify(client, raw)
+
+    assert response.status_code == 400
+    assert response.json() == {"detail": "Password reset token has already been used"}
+
+
+def test_verify_token_rejects_an_unknown_token(client):
+    response = verify(client, "never-issued")
+
+    assert response.status_code == 400
+    assert response.json() == {"detail": "Invalid password reset token"}

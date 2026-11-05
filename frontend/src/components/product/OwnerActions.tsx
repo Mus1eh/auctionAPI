@@ -15,7 +15,8 @@ import { formatPrice } from '@/lib/format'
 function GoLiveRequest({ product }: { product: Product }) {
   const request = useRequestGoLive()
   const [submittedId, setSubmittedId] = useState<number | null>(null)
-  const alreadyPending = isApiError(request.error, 409)
+  // The API answers 409 for any state conflict, so only the "pending" one means a request is waiting.
+  const alreadyPending = isApiError(request.error, 409) && /pending/i.test(request.error.message)
 
   if (submittedId !== null || alreadyPending) {
     return (

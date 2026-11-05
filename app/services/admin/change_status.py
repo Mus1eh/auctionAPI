@@ -2,7 +2,12 @@ from datetime import UTC, datetime, timedelta
 
 from sqlalchemy.orm import Session
 
-from app.core.exceptions import BadRequestError, ConflictError, ProductNotFoundError
+from app.core.exceptions import (
+    BadRequestError,
+    ConflictError,
+    ProductNotFoundError,
+    SameStatusError,
+)
 from app.enums import ProductStatus
 from app.repositories.bids import BidRepository
 from app.repositories.email_outbox import EmailOutboxRepository
@@ -25,9 +30,7 @@ def change_product_status(
             raise ProductNotFoundError()
 
         if product.status == status_value:
-            raise ConflictError(
-                "The requested status is the same as the current status."
-            )
+            raise SameStatusError()
 
         if status_value == ProductStatus.CLOSED:
             if product.status != ProductStatus.ACTIVE:
