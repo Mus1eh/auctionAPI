@@ -4,7 +4,7 @@ celery_app = Celery(
     "auction",
     broker="redis://localhost:6379/0",
     backend="redis://localhost:6379/1",
-    include=["app.tasks"],
+    include=["app.worker.tasks"],
 )
 
 celery_app.conf.beat_schedule = {

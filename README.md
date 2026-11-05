@@ -93,10 +93,10 @@ You need three terminals:
 uv run uvicorn app.main:app --reload
 
 # Celery worker, which runs the background tasks
-uv run celery -A app.celery_app worker --loglevel=info
+uv run celery -A app.worker.celery_app worker --loglevel=info
 
 # Celery beat, which closes expired auctions and sends queued emails every 10 seconds
-uv run celery -A app.celery_app beat --loglevel=info
+uv run celery -A app.worker.celery_app beat --loglevel=info
 ```
 
 Interactive API docs are at **http://localhost:8000/docs**.

@@ -1,14 +1,16 @@
 from datetime import UTC, datetime
 
-from app.celery_app import celery_app
 from app.core.database import sessionLocal
-from app.email_service import send_auction_email
+from app.mailer.service import send_auction_email
 from app.repositories.bids import BidRepository
 from app.repositories.email_outbox import EmailOutboxRepository
 from app.repositories.product import ProductRepository
 from app.services.auctions.close import close_auction
+from app.worker.celery_app import celery_app
 
 
+# Task names keep their original "app.tasks." prefix so tasks already queued or
+# scheduled keep working after the module moved.
 @celery_app.task(name="app.tasks.close_expired_auctions")
 def close_expired_auctions():
     db = sessionLocal()

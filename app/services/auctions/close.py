@@ -1,11 +1,11 @@
 from sqlalchemy.orm import Session
 
 from app import models
-from app.email_templates import (
+from app.enums import ProductStatus
+from app.mailer.templates import (
     highest_bidder_email,
     owner_auction_closed_email,
 )
-from app.enums import ProductStatus
 from app.repositories.bids import BidRepository
 from app.repositories.email_outbox import EmailOutboxRepository
 
