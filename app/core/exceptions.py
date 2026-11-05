@@ -1,9 +1,3 @@
-"""Errors raised by services, policies and dependencies.
-
-They carry no web framework types, so the business layer does not depend on
-FastAPI. The handler registered in app/main.py turns them into HTTP responses.
-"""
-
 from typing import Any
 
 BEARER_CHALLENGE = {"WWW-Authenticate": "Bearer"}
@@ -98,3 +92,8 @@ class InvalidResetTokenError(BadRequestError):
 
 class ResetTokenAlreadyUsedError(BadRequestError):
     default_detail = "Password reset token has already been used"
+
+
+class TooManyRequestsError(AppError):
+    status_code = 429
+    default_detail = "Too many attempts. Please try again later."

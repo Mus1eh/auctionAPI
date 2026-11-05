@@ -23,6 +23,8 @@ class Settings(BaseSettings):
     smtp_from_email: str
     frontend_url: str
 
+    rate_limit_storage: str
+
 
 # Kept apart so the API can start without the seed accounts' credentials.
 class SeedSettings(BaseSettings):

@@ -8,6 +8,7 @@ from app.dependencies import (
     get_product_repo,
     get_product_status_request_repo,
     get_user_repo,
+    limit_by_ip,
 )
 from app.oauth2 import get_current_user
 from app.repositories.authentication import AuthenticationRepository
@@ -22,7 +23,12 @@ from app.services.users.get import get_user_by_id as get_user_by_id_service
 router = APIRouter(prefix="/users", tags=["Users"])
 
 
-@router.post("/", response_model=schemas.UserShow, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/",
+    response_model=schemas.UserShow,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(limit_by_ip("register", "5/hour"))],
+)
 def create_user(
     request: schemas.UserCreate,
     db: Session = Depends(get_db),

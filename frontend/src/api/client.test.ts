@@ -49,6 +49,18 @@ describe('apiRequest', () => {
     expect(error).toMatchObject({ status: 404, message: 'Product is not found.' })
   })
 
+  it('shows the rate limit message from the API when it is too busy', async () => {
+    mockFetch({ 'POST /auth/': jsonResponse({ detail: 'Too many attempts. Please try again later.' }, 429) })
+    const error = (await apiRequest('/auth/', { method: 'POST', json: {} }).catch((e) => e)) as ApiError
+    expect(error).toMatchObject({ status: 429, message: 'Too many attempts. Please try again later.' })
+  })
+
+  it('falls back to a friendly message when a 429 has no detail', async () => {
+    mockFetch({ 'POST /auth/': jsonResponse({}, 429) })
+    const error = (await apiRequest('/auth/', { method: 'POST', json: {} }).catch((e) => e)) as ApiError
+    expect(error.message).toBe('Too many attempts. Please wait a moment and try again.')
+  })
+
   it('exposes field errors from 422 responses', async () => {
     mockFetch({
       'POST /users/': jsonResponse({ detail: [{ loc: ['body', 'email'], msg: 'value is not a valid email address', type: 'value_error' }] }, 422),

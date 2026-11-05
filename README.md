@@ -68,6 +68,7 @@ Fill in `.env`:
 | `SUPERADMIN_*`, `ADMIN_*`                                                                         | Accounts created by the seed script                                           |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_FROM_EMAIL`                     | Outgoing email                                                                |
 | `FRONTEND_URL`                                                                                    | Base of the password reset link: `{FRONTEND_URL}/reset-password?token=...`    |
+| `RATE_LIMIT_STORAGE`                                                                              | Where rate limit counters live, for example `redis://localhost:6379/2`        |
 
 ### 4. Create the tables and seed data
 
@@ -206,6 +207,25 @@ Every error is `{"detail": ...}`. Services raise the errors in `app/core/excepti
 | `413` / `422` | CSV too large / field-level validation |
 
 A missing thing always has the same wording: `Product is not found.`, `User is not found.`, `Status request is not found.`
+
+## Rate limiting
+
+The public endpoints are limited so passwords can't be guessed, inboxes can't be flooded and the server can't be kept busy hashing. Counters live in Redis (`RATE_LIMIT_STORAGE`, a different database from Celery) and a refused request answers `429` with a `Retry-After` header.
+
+| Endpoint | Per address | Per account |
+| --- | --- | --- |
+| `POST /auth/` (sign in) | 20 per minute | 5 failed attempts per 15 minutes, per address and username. A correct password clears them. |
+| `POST /users/` | 5 per hour | |
+| `POST /auth/forgot-password` | 10 per hour | 3 per hour, per email, whether or not the account exists |
+| `POST /auth/reset-password` | 10 per hour | |
+| `POST /auth/verify-token` | 30 per minute | |
+| `POST /auth/refresh`, `/auth/logout` | 60 per minute | |
+
+Signing in with an unknown username takes as long as a wrong password, so response time doesn't reveal which accounts exist.
+
+**Behind a proxy:** the limit uses the client address, so the app must see the real one. Start uvicorn with `--proxy-headers --forwarded-allow-ips=<your proxy's address>`, and make the proxy overwrite `X-Forwarded-For` instead of appending to it. Never use `--forwarded-allow-ips='*'` unless the app can only be reached through the proxy. Uvicorn already trusts `127.0.0.1` by default, and any client that is trusted can send a fake `X-Forwarded-For` to dodge the limits. Without the flag behind a proxy, every user shares the proxy's address and one person's limit hits everyone.
+
+The tests switch limiting off (`rate_limiting_off` in `tests/conftest.py`) because the whole suite calls the API from one address. `tests/test_rate_limit.py` swaps in a real limiter on in-memory storage.
 
 ## Notes
 

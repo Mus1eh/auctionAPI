@@ -15,3 +15,4 @@ email-validator
 psycopg
 celery[redis]
 alembic
+limits

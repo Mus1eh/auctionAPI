@@ -55,6 +55,7 @@ const STATUS_FALLBACKS: Record<number, string> = {
   404: 'Not found.',
   409: 'That action conflicts with the current state. Refresh and try again.',
   422: 'Some of the submitted data is invalid.',
+  429: 'Too many attempts. Please wait a moment and try again.',
 }
 
 export function buildUrl(path: string, query?: Record<string, string | number | undefined>) {

@@ -38,10 +38,35 @@ if os.getenv("SQLALCHEMY_URL"):
 from app import models
 from app.core.database import Base, get_db
 from app.core.security import Hash, create_access_token
+from app.dependencies import get_rate_limiter
 from app.enums import ProductStatus
 from app.main import app
 
 engine = create_engine(TEST_DATABASE_URL)
+
+
+class NoRateLimiter:
+    """Never refuses anything. The whole suite calls the API from one IP, so real
+    limits would turn ordinary tests into 429s. test_rate_limit.py swaps in a real one."""
+
+    def check(self, scope, key, rule):
+        pass
+
+    def ensure_allowed(self, scope, key, rule):
+        pass
+
+    def record(self, scope, key, rule):
+        pass
+
+    def clear(self, scope, key, rule):
+        pass
+
+
+@pytest.fixture(autouse=True)
+def rate_limiting_off():
+    app.dependency_overrides[get_rate_limiter] = NoRateLimiter
+    yield
+    app.dependency_overrides.pop(get_rate_limiter, None)
 
 
 @pytest.fixture(scope="session", autouse=True)

@@ -6,6 +6,7 @@ from app.core.exceptions import (
     InvalidResetTokenError,
     ResetTokenAlreadyUsedError,
 )
+from app.core.rate_limit import RateLimiter
 from app.core.security import Hash
 from app.mailer.service import send_password_reset_email
 from app.repositories.authentication import AuthenticationRepository
@@ -15,13 +16,20 @@ from app.services.authentication.reset_tokens import (
     verify_password_reset_token,
 )
 
+# Counted per submitted email whether or not the account exists, so the limit
+# itself reveals nothing, and nobody's inbox can be flooded.
+FORGOT_PASSWORD_RULE = "3 per hour"
+
 
 def forgot_password(
     request: schemas.ForgotPasswordRequest,
     db: Session,
     user_repo: UserRepository,
     auth_repo: AuthenticationRepository,
+    limiter: RateLimiter,
 ):
+    limiter.check("forgot-password-email", request.email.lower(), FORGOT_PASSWORD_RULE)
+
     user = user_repo.get_by_email(request.email)
     if user:
         try:
