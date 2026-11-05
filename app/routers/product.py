@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, File, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app import models, schemas
-from app.database import get_db
+from app.core.database import get_db
 from app.dependencies import get_product_repo, get_product_status_request_repo
 from app.enums import ProductStatus
 from app.oauth2 import get_current_user, get_current_user_optional

@@ -1,5 +1,5 @@
 from app import models
-from app.hashing import Hash
+from app.core.security import Hash
 
 
 def test_login_with_username_and_email(client, make_user):

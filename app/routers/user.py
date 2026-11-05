@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from app import models, schemas
-from app.database import get_db
+from app.core.database import get_db
 from app.dependencies import (
     get_auth_repo,
     get_product_repo,

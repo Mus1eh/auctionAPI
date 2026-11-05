@@ -1,8 +1,8 @@
 from datetime import UTC, datetime, timedelta
 
 from app import models
-from app.config import SeedSettings
-from app.database import sessionLocal
+from app.core.config import SeedSettings
+from app.core.database import sessionLocal
 from app.enums import ProductStatus
 
 seed_settings = SeedSettings()

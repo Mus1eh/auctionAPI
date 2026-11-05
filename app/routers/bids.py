@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from app import models, schemas
-from app.database import get_db
+from app.core.database import get_db
 from app.dependencies import get_bid_repo, get_email_outbox_repo, get_product_repo
 from app.enums import ApproveBidding
 from app.oauth2 import get_current_user, get_current_user_optional

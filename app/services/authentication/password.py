@@ -2,8 +2,8 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app import models, schemas
+from app.core.security import Hash
 from app.email_service import send_password_reset_email
-from app.hashing import Hash
 from app.password_reset import (
     create_password_reset_token,
     verify_password_reset_token,

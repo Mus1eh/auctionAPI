@@ -5,7 +5,7 @@ from datetime import UTC, datetime, timedelta
 from fastapi import HTTPException, status
 
 from app import models
-from app.config import settings
+from app.core.config import settings
 from app.repositories.authentication import AuthenticationRepository
 
 

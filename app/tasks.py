@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 
 from app.celery_app import celery_app
-from app.database import sessionLocal
+from app.core.database import sessionLocal
 from app.email_service import send_auction_email
 from app.repositories.bids import BidRepository
 from app.repositories.email_outbox import EmailOutboxRepository

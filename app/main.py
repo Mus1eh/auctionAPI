@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-# from app.database import Base, engine
+# from app.core.database import Base, engine
 from app.routers import admin, authentication, bids, product, user
 
 app = FastAPI(

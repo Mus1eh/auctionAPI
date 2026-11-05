@@ -1,9 +1,9 @@
 from sqlalchemy import or_
 
 from app import models
-from app.config import SeedSettings
-from app.database import sessionLocal
-from app.hashing import Hash
+from app.core.config import SeedSettings
+from app.core.database import sessionLocal
+from app.core.security import Hash
 
 seed_settings = SeedSettings()
 

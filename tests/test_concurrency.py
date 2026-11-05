@@ -13,11 +13,10 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app import models
-from app.database import get_db
+from app.core.database import get_db
+from app.core.security import Hash, create_access_token
 from app.enums import ProductStatus
-from app.hashing import Hash
 from app.main import app
-from app.oauth2 import create_access_token
 from tests.conftest import engine
 
 

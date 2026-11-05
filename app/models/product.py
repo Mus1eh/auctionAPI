@@ -2,7 +2,7 @@ from sqlalchemy import Column, DateTime, ForeignKey, Integer, String
 from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.orm import relationship
 
-from app.database import Base
+from app.core.database import Base
 from app.enums import ProductStatus
 from app.mixin import SoftDeleteMixin
 

@@ -1,7 +1,7 @@
 from fastapi import Depends
 from sqlalchemy.orm import Session
 
-from app.database import get_db
+from app.core.database import get_db
 from app.repositories.authentication import AuthenticationRepository
 from app.repositories.bids import BidRepository
 from app.repositories.email_outbox import EmailOutboxRepository

@@ -36,11 +36,10 @@ if os.getenv("SQLALCHEMY_URL"):
         raise RuntimeError("Test and development databases must be different")
 
 from app import models
-from app.database import Base, get_db
+from app.core.database import Base, get_db
+from app.core.security import Hash, create_access_token
 from app.enums import ProductStatus
-from app.hashing import Hash
 from app.main import app
-from app.oauth2 import create_access_token
 
 engine = create_engine(TEST_DATABASE_URL)
 
