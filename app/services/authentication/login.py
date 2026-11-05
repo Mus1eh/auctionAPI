@@ -1,4 +1,3 @@
-from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
 from app import models, schemas
@@ -10,20 +9,19 @@ from app.services.authentication.refresh_tokens import create_refresh_token, has
 
 
 def login(
-    request: OAuth2PasswordRequestForm,
+    username: str,
+    password: str,
     db: Session,
     user_repo: UserRepository,
     auth_repo: AuthenticationRepository,
 ):
     # The form's username field holds either an email or a username.
-    user = user_repo.get_by_email(request.username) or user_repo.get_by_username(
-        request.username
-    )
+    user = user_repo.get_by_email(username) or user_repo.get_by_username(username)
 
     credential_exception = InvalidCredentialsError()
     if not user:
         raise credential_exception
-    if not Hash.verify_password(request.password, user.password):
+    if not Hash.verify_password(password, user.password):
         raise credential_exception
     access_token = create_access_token(data={"sub": user.username})
     try:

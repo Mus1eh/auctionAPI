@@ -36,7 +36,11 @@ def login(
     auth_repo: AuthenticationRepository = Depends(get_auth_repo),
 ):
     return login_service(
-        request=request, db=db, user_repo=user_repo, auth_repo=auth_repo
+        username=request.username,
+        password=request.password,
+        db=db,
+        user_repo=user_repo,
+        auth_repo=auth_repo,
     )
 
 

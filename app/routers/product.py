@@ -213,9 +213,13 @@ def import_products_csv(
     current_user: models.User = Depends(get_current_user),
     repo: ProductRepository = Depends(get_product_repo),
 ):
-    return import_products_csv_service(
-        db=db,
-        repo=repo,
-        file=file,
-        current_user=current_user,
-    )
+    try:
+        return import_products_csv_service(
+            db=db,
+            repo=repo,
+            filename=file.filename,
+            file=file.file,
+            current_user=current_user,
+        )
+    finally:
+        file.file.close()

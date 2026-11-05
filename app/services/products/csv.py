@@ -1,7 +1,7 @@
 import csv
 import io
+from typing import BinaryIO
 
-from fastapi import UploadFile
 from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
@@ -16,14 +16,18 @@ from app.repositories.product import ProductRepository
 
 
 def import_products_csv(
-    db: Session, file: UploadFile, repo: ProductRepository, current_user: models.User
+    db: Session,
+    filename: str | None,
+    file: BinaryIO,
+    repo: ProductRepository,
+    current_user: models.User,
 ):
 
-    if not file.filename or not file.filename.lower().endswith(".csv"):
+    if not filename or not filename.lower().endswith(".csv"):
         raise BadRequestError("Only csv files can be imported.")
 
     try:
-        content = file.file.read(2 * 1024 * 1024 + 1)
+        content = file.read(2 * 1024 * 1024 + 1)
 
         if len(content) > 2 * 1024 * 1024:
             raise PayloadTooLargeError("CSV file exceeds the 2 MB size limit.")
@@ -98,6 +102,3 @@ def import_products_csv(
     except Exception:
         db.rollback()
         raise
-
-    finally:
-        file.file.close()
