@@ -3,9 +3,12 @@ from sqlalchemy.orm import Session
 
 from app import schemas
 from app.core.security import create_access_token
-from app.refresh_token import create_refresh_token, verify_refresh_token
 from app.repositories.authentication import AuthenticationRepository
 from app.repositories.user import UserRepository
+from app.services.authentication.refresh_tokens import (
+    create_refresh_token,
+    verify_refresh_token,
+)
 
 
 def refresh_token(

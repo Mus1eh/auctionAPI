@@ -4,7 +4,7 @@ from sqlalchemy.orm import relationship
 
 from app.core.database import Base
 from app.enums import ProductStatus
-from app.mixin import SoftDeleteMixin
+from app.models.mixin import SoftDeleteMixin
 
 
 class Product(SoftDeleteMixin, Base):

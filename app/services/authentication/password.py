@@ -4,12 +4,12 @@ from sqlalchemy.orm import Session
 from app import models, schemas
 from app.core.security import Hash
 from app.mailer.service import send_password_reset_email
-from app.password_reset import (
+from app.repositories.authentication import AuthenticationRepository
+from app.repositories.user import UserRepository
+from app.services.authentication.reset_tokens import (
     create_password_reset_token,
     verify_password_reset_token,
 )
-from app.repositories.authentication import AuthenticationRepository
-from app.repositories.user import UserRepository
 
 
 def forgot_password(

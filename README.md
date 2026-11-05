@@ -174,22 +174,18 @@ Add coverage with `--cov=app --cov-report=html`. The report goes to `htmlcov/`. 
 ```
 app/
   main.py              FastAPI app and router registration
-  models/              SQLAlchemy models
-  schemas/             Pydantic request and response models
   enums.py             Product, bid and approval statuses
-  config.py            Settings loaded from the environment and .env
-  database.py          Engine and session
-  oauth2.py            JWT access tokens and the current user
-  refresh_token.py     Refresh token storage and rotation
-  password_reset.py    Reset token handling
-  permissions.py       Role and ownership checks
-  routers/             auth, users, products, bids, admin
-  services/            Business logic, one folder per area
+  dependencies.py      Repository providers for FastAPI
+  oauth2.py            The current user from a JWT access token
+  permissions.py       Role checks used as route dependencies
+  core/                config (settings from .env), database, security (hashing, JWT)
+  models/              SQLAlchemy models, one file per table
+  schemas/             Pydantic request and response models
   repositories/        Database access, one file per area
-  celery_app.py        Celery config and beat schedule
-  tasks.py             Background tasks: close auctions, send emails from the outbox
-  email_service.py     SMTP sending
-  email_templates.py   Email bodies
+  services/            Business logic, one folder per area
+  routers/             auth, users, products, bids, admin
+  mailer/              SMTP sending and email bodies
+  worker/              Celery config and background tasks
   seeders/             Seed scripts for roles, admins and sample products
 tests/                 pytest suite
 frontend/              React frontend (main branch only, see frontend/README.md)
