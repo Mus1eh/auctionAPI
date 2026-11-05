@@ -74,7 +74,7 @@ Fill in `.env`:
 There are no migrations yet, so create the tables once with:
 
 ```bash
-uv run python -c "from app import models; from app.database import Base, engine; Base.metadata.create_all(engine)"
+uv run python -c "from app import models; from app.core.database import Base, engine; Base.metadata.create_all(engine)"
 ```
 
 Then create the roles plus the superadmin and admin accounts, and optionally some sample products:
@@ -177,8 +177,9 @@ app/
   enums.py             Product, bid and approval statuses
   dependencies.py      Repository providers for FastAPI
   oauth2.py            The current user from a JWT access token
-  permissions.py       Role checks used as route dependencies
-  core/                config (settings from .env), database, security (hashing, JWT)
+  permissions.py       Role check used as a route dependency
+  core/                config (settings from .env), database, security (hashing, JWT),
+                       exceptions (errors raised by services) and policies (role checks)
   models/              SQLAlchemy models, one file per table
   schemas/             Pydantic request and response models
   repositories/        Database access, one file per area

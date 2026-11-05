@@ -23,7 +23,7 @@ def close_expired_auctions():
         bid_repo = BidRepository(db)
 
         for product in expired_auctions:
-            close_auction(db, product, outbox_repo, bid_repo)
+            close_auction(product, outbox_repo, bid_repo)
 
         closed_count = len(expired_auctions)
 

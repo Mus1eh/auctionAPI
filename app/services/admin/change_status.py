@@ -33,7 +33,7 @@ def change_product_status(
             if product.status != ProductStatus.ACTIVE:
                 raise ConflictError("Only active auctions can be closed.")
             bid_repo = BidRepository(db)
-            close_auction(db, product, outbox_repo, bid_repo)
+            close_auction(product, outbox_repo, bid_repo)
 
         elif status_value == ProductStatus.ACTIVE:
             if product.status != ProductStatus.DRAFT:

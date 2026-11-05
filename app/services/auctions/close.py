@@ -1,5 +1,3 @@
-from sqlalchemy.orm import Session
-
 from app import models
 from app.enums import ProductStatus
 from app.mailer.templates import (
@@ -11,7 +9,6 @@ from app.repositories.email_outbox import EmailOutboxRepository
 
 
 def close_auction(
-    db: Session,
     product: models.Product,
     outbox_repo: EmailOutboxRepository,
     bid_repo: BidRepository,
