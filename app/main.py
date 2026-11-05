@@ -6,12 +6,12 @@ from app.core.exceptions import AppError
 from app.routers import admin, authentication, bids, product, user
 
 app = FastAPI(
-    title="PROJECT ManAPI",
+    title="Auction API", description="An API for managing auctions", version="2.4.2"
 )
 
-app.include_router(bids.router)
 app.include_router(admin.router)
 app.include_router(authentication.router)
+app.include_router(bids.router)
 app.include_router(user.router)
 app.include_router(product.router)
 
