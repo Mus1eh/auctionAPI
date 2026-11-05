@@ -2,7 +2,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app import models, schemas
-from app.permissions import is_superadmin
+from app.core.policies import is_superadmin
 from app.repositories.user import UserRepository
 
 

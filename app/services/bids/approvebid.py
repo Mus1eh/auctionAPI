@@ -2,9 +2,9 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app import models, schemas
+from app.core.policies import is_superadmin
 from app.enums import ApproveBidding, ProductStatus
 from app.mailer.templates import bid_approved_email, bid_rejected_email
-from app.permissions import is_superadmin
 from app.repositories.bids import BidRepository
 from app.repositories.email_outbox import EmailOutboxRepository
 from app.repositories.product import ProductRepository

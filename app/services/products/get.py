@@ -1,8 +1,8 @@
 from fastapi import HTTPException, status
 
 from app import models
+from app.core.policies import is_admin
 from app.enums import ProductStatus
-from app.permissions import is_admin
 from app.repositories.product import ProductRepository
 
 PRIVATE_STATUSES = (

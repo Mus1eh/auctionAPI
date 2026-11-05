@@ -2,8 +2,8 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app import models
+from app.core.policies import is_admin, is_superadmin
 from app.enums import ProductStatus
-from app.permissions import is_admin, is_superadmin
 from app.repositories.authentication import AuthenticationRepository
 from app.repositories.product import ProductRepository
 from app.repositories.product_status_request import ProductStatusRequestRepository

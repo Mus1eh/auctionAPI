@@ -2,8 +2,8 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app import models
+from app.core.policies import require_product_owner_or_admin
 from app.enums import ProductStatus
-from app.permissions import require_product_owner_or_admin
 from app.repositories.product import ProductRepository
 
 EDITABLE_STATUSES = {
