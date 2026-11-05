@@ -1,9 +1,15 @@
 from datetime import UTC, datetime
 
-from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app import models
+from app.core.exceptions import (
+    ConflictError,
+    ProductNotFoundError,
+    StatusRequestAlreadyProcessedError,
+    StatusRequestNotFoundError,
+    StatusRequestProductChangedError,
+)
 from app.enums import ApprovalStatus, ProductStatus
 from app.repositories.product import ProductRepository
 from app.repositories.product_status_request import ProductStatusRequestRepository
@@ -20,46 +26,30 @@ def reject_status_request(
         status_request = status_repo.get_by_id(request_id)
 
         if status_request is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Status request not found.",
-            )
+            raise StatusRequestNotFoundError()
 
         product = product_repo.get_by_id_for_update(status_request.product_id)
 
         if product is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Product not found.",
-            )
+            raise ProductNotFoundError()
 
         status_request = status_repo.get_by_id_for_update(request_id)
 
         if status_request is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Status request not found.",
-            )
+            raise StatusRequestNotFoundError()
 
         if status_request.product_id != product.id:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Status request product has changed.",
-            )
+            raise StatusRequestProductChangedError()
 
         if status_request.approval_status != ApprovalStatus.PENDING:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="This status request has already been processed.",
-            )
+            raise StatusRequestAlreadyProcessedError()
 
         if (
             product.status != ProductStatus.DRAFT
             or status_request.requested_status != ProductStatus.ACTIVE
         ):
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Product status has changed. Request cannot be rejected.",
+            raise ConflictError(
+                "Product status has changed. Request cannot be rejected."
             )
 
         now = datetime.now(UTC)

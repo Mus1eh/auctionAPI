@@ -1,7 +1,7 @@
-from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app import models, schemas
+from app.core.exceptions import ForbiddenError, NotFoundError
 from app.core.policies import is_superadmin
 from app.enums import ApproveBidding, ProductStatus
 from app.mailer.templates import bid_approved_email, bid_rejected_email
@@ -25,36 +25,25 @@ def approve_bid(
         product = product_repo.get_by_id_for_update(product_id)
 
         if not product:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Product with id {product_id} not found",
-            )
+            raise NotFoundError(f"Product with id {product_id} not found")
 
         if product.owner_id != current_user.id and not is_superadmin(current_user):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Only the owner or a superadmin can approve or reject bids",
+            raise ForbiddenError(
+                "Only the owner or a superadmin can approve or reject bids"
             )
 
         if product.status == ProductStatus.SOLD:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Bidding has already been approved for this product.",
-            )
+            raise ForbiddenError("Bidding has already been approved for this product.")
 
         if product.status not in ALLOWED_APPROVE_STATUSES:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Only closed or rejected products can be approved or rejected.",
+            raise ForbiddenError(
+                "Only closed or rejected products can be approved or rejected."
             )
 
         highest_bid = bid_repo.get_highest_by_product(product_id)
 
         if not highest_bid:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="No bids found for this product.",
-            )
+            raise NotFoundError("No bids found for this product.")
 
         winning_bidder = None
 

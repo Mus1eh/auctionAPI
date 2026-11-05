@@ -1,7 +1,7 @@
-from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app import models
+from app.core.exceptions import ForbiddenError, UserNotFoundError
 from app.core.policies import is_admin
 from app.repositories.user import UserRepository
 
@@ -12,14 +12,9 @@ def get_user_by_id(
     user = user_repo.get_by_id(user_id)
 
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="User is not found."
-        )
+        raise UserNotFoundError()
 
     if not is_admin(current_user) and current_user.id != user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You cannot access this user's profile.",
-        )
+        raise ForbiddenError("You cannot access this user's profile.")
 
     return user

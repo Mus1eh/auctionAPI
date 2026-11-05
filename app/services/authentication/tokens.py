@@ -1,7 +1,7 @@
-from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app import schemas
+from app.core.exceptions import UnauthorizedError
 from app.core.security import create_access_token
 from app.repositories.authentication import AuthenticationRepository
 from app.repositories.user import UserRepository
@@ -23,19 +23,13 @@ def refresh_token(
     user = user_repo.get_by_id(db_token.user_id)
 
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="user no longer exists",
-        )
+        raise UnauthorizedError("user no longer exists")
 
     affected_rows = auth_repo.refresh_token_update(db_token)
 
     if affected_rows != 1:
         db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Failed to revoke the refresh token.",
-        )
+        raise UnauthorizedError("Failed to revoke the refresh token.")
     try:
         new_refresh_token = create_refresh_token(auth_repo, user.id)
 

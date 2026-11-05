@@ -1,6 +1,5 @@
-from fastapi import HTTPException, status
-
 from app import models
+from app.core.exceptions import BEARER_CHALLENGE, NotFoundError, UnauthorizedError
 from app.core.policies import is_admin
 from app.enums import ProductStatus
 from app.repositories.product import ProductRepository
@@ -19,19 +18,13 @@ def get_product(
     product = repo.get_by_id(product_id)
 
     if product is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Product is not found.",
-        )
+        raise NotFoundError("Product is not found.")
 
     if product.status in PRIVATE_STATUSES:  # noqa
         if current_user is None or (
             not is_admin(current_user) and product.owner_id != current_user.id
         ):
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Product is not found.",
-            )
+            raise NotFoundError("Product is not found.")
 
     return product
 
@@ -43,10 +36,7 @@ def get_my_product(
     products = repo.get_by_owner(current_user.id)
 
     if not products:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Product is not found.",
-        )
+        raise NotFoundError("Product is not found.")
     return products
 
 
@@ -61,10 +51,9 @@ def get_by_status(
     is_private = product_status in PRIVATE_STATUSES
 
     if is_private and current_user is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=(f"Please log in to view your {product_status.value} products."),
-            headers={"WWW-Authenticate": "Bearer"},
+        raise UnauthorizedError(
+            f"Please log in to view your {product_status.value} products.",
+            headers=BEARER_CHALLENGE,
         )
 
     owner_id = current_user.id if is_private and current_user is not None else None
@@ -78,9 +67,6 @@ def get_by_status(
             else "No products found."
         )
 
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=detail,
-        )
+        raise NotFoundError(detail)
 
     return products

@@ -2,10 +2,9 @@ import hashlib
 import secrets
 from datetime import UTC, datetime, timedelta
 
-from fastapi import HTTPException, status
-
 from app import models
 from app.core.config import settings
+from app.core.exceptions import BEARER_CHALLENGE, UnauthorizedError
 from app.repositories.authentication import AuthenticationRepository
 
 
@@ -25,10 +24,8 @@ def create_refresh_token(auth_repo: AuthenticationRepository, user_id: int) -> s
 def verify_refresh_token(
     auth_repo: AuthenticationRepository, token: str
 ) -> models.RefreshToken:
-    unauthorized_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Invalid refresh token",
-        headers={"WWW-Authenticate": "Bearer"},
+    unauthorized_exception = UnauthorizedError(
+        "Invalid refresh token", headers=BEARER_CHALLENGE
     )
     db_token = auth_repo.get_refresh_token_by_hash(hash_token(token))
 

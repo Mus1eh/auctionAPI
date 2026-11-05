@@ -1,7 +1,7 @@
-from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app import models
+from app.core.exceptions import ConflictError, ProductNotFoundError
 from app.core.policies import require_product_owner_or_admin
 from app.enums import ProductStatus
 from app.repositories.product import ProductRepository
@@ -25,24 +25,15 @@ def delete_product(
     product = repo.get_by_id_for_update(product_id)
 
     if not product:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Product not found.",
-        )
+        raise ProductNotFoundError()
 
     require_product_owner_or_admin(product, current_user)
 
     if product.status not in DELETABLE_STATUSES:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Product cannot be deleted in its current status.",
-        )
+        raise ConflictError("Product cannot be deleted in its current status.")
 
     if repo.has_bids(product_id):
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Product cannot be deleted because it has bids.",
-        )
+        raise ConflictError("Product cannot be deleted because it has bids.")
 
     pending_request = status_repo.get_pending_by_product(product_id)
 

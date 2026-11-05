@@ -1,8 +1,8 @@
-from fastapi import HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
 from app import models, schemas
+from app.core.exceptions import InvalidCredentialsError
 from app.core.security import Hash, create_access_token
 from app.repositories.authentication import AuthenticationRepository
 from app.repositories.user import UserRepository
@@ -20,11 +20,7 @@ def login(
         request.username
     )
 
-    credential_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
+    credential_exception = InvalidCredentialsError()
     if not user:
         raise credential_exception
     if not Hash.verify_password(request.password, user.password):

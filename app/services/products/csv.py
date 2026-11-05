@@ -1,11 +1,16 @@
 import csv
 import io
 
-from fastapi import HTTPException, UploadFile, status
+from fastapi import UploadFile
 from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
 from app import models, schemas
+from app.core.exceptions import (
+    BadRequestError,
+    PayloadTooLargeError,
+    UnprocessableError,
+)
 from app.enums import ProductStatus
 from app.repositories.product import ProductRepository
 
@@ -15,19 +20,13 @@ def import_products_csv(
 ):
 
     if not file.filename or not file.filename.lower().endswith(".csv"):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Only csv files can be imported.",
-        )
+        raise BadRequestError("Only csv files can be imported.")
 
     try:
         content = file.file.read(2 * 1024 * 1024 + 1)
 
         if len(content) > 2 * 1024 * 1024:
-            raise HTTPException(
-                status_code=status.HTTP_413_CONTENT_TOO_LARGE,
-                detail="CSV file exceeds the 2 MB size limit.",
-            )
+            raise PayloadTooLargeError("CSV file exceeds the 2 MB size limit.")
 
         decoded_content = content.decode("utf-8")
 
@@ -40,9 +39,8 @@ def import_products_csv(
             or len(reader.fieldnames) != len(expected_columns)
             or set(reader.fieldnames) != expected_columns
         ):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="CSV file must contain name, description and start_price columns.",
+            raise BadRequestError(
+                "CSV file must contain name, description and start_price columns."
             )
 
         products = []
@@ -77,19 +75,15 @@ def import_products_csv(
                 )
 
         if errors:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                detail={
+            raise UnprocessableError(
+                {
                     "message": "CSV validation failed, No products were imported.",
                     "errors": errors,
-                },
+                }
             )
 
         if not products:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="CSV contain no product",
-            )
+            raise BadRequestError("CSV contain no product")
 
         repo.create_bulk(products)
         db.commit()
@@ -99,10 +93,7 @@ def import_products_csv(
             "imported_count": len(products),
         }
     except UnicodeDecodeError:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="CSV must be UTF-8 encoded.",
-        )
+        raise BadRequestError("CSV must be UTF-8 encoded.")
 
     except Exception:
         db.rollback()

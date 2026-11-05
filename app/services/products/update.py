@@ -1,7 +1,7 @@
-from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app import models
+from app.core.exceptions import ConflictError, ProductNotFoundError, UnprocessableError
 from app.core.policies import require_product_owner_or_admin
 from app.enums import ProductStatus
 from app.repositories.product import ProductRepository
@@ -30,10 +30,7 @@ def update_product(
         product = repo.get_by_id_for_update(product_id)
 
         if product is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Product not found.",
-            )
+            raise ProductNotFoundError()
 
         # Only the owner or an admin can update.
         require_product_owner_or_admin(
@@ -45,17 +42,13 @@ def update_product(
         unexpected_fields = set(request) - CLIENT_EDITABLE_FIELDS
 
         if unexpected_fields:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=(f"Fields cannot be edited: {sorted(unexpected_fields)}"),
+            raise UnprocessableError(
+                f"Fields cannot be edited: {sorted(unexpected_fields)}"
             )
 
         # Prevent edits to active or completed auctions.
         if product.status not in EDITABLE_STATUSES:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail=("This product cannot be edited in its current status."),
-            )
+            raise ConflictError("This product cannot be edited in its current status.")
 
         # Check whether the starting price is changing.
         price_changed = (
@@ -66,18 +59,12 @@ def update_product(
 
         if price_changed:
             if repo.has_bids(product.id):
-                raise HTTPException(
-                    status_code=status.HTTP_409_CONFLICT,
-                    detail=(
-                        "Starting price cannot be changed after bids have been placed."
-                    ),
+                raise ConflictError(
+                    "Starting price cannot be changed after bids have been placed."
                 )
 
             if data["start_price"] <= 0:
-                raise HTTPException(
-                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                    detail="Starting price must be positive.",
-                )
+                raise UnprocessableError("Starting price must be positive.")
 
             # Internal update, never supplied by the client.
             data["current_price"] = data["start_price"]

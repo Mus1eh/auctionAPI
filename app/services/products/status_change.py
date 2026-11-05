@@ -1,7 +1,13 @@
-from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app import models
+from app.core.exceptions import (
+    BadRequestError,
+    ConflictError,
+    ForbiddenError,
+    NotProductOwnerError,
+    ProductNotFoundError,
+)
 from app.enums import ApprovalStatus, ProductStatus
 from app.repositories.product import ProductRepository
 from app.repositories.product_status_request import ProductStatusRequestRepository
@@ -23,42 +29,28 @@ def request_status_change(
         product = repo.get_by_id_for_update(product_id)
 
         if not product:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Product not found.",
-            )
+            raise ProductNotFoundError()
 
         if product.owner_id != current_user.id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="You are not the owner of this product.",
-            )
+            raise NotProductOwnerError()
 
         pending_request = status_repo.get_pending_by_product(product.id)
 
         if pending_request:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="There is already a pending request for this product.",
-            )
+            raise ConflictError("There is already a pending request for this product.")
 
         if request == product.status:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="The requested status is the same as the current status.",
+            raise BadRequestError(
+                "The requested status is the same as the current status."
             )
 
         if request == ProductStatus.CLOSED:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="You cannot request to close the product, please wait until the timer runs out.",
+            raise ForbiddenError(
+                "You cannot request to close the product, please wait until the timer runs out."
             )
 
         if request not in ALLOWED_TRANSITIONS.get(product.status, set()):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid product status transition.",
-            )
+            raise BadRequestError("Invalid product status transition.")
 
         new_request = models.ProductStatusRequest(
             product_id=product.id,

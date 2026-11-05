@@ -1,7 +1,12 @@
-from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app import models
+from app.core.exceptions import (
+    ConflictError,
+    ForbiddenError,
+    PermissionDeniedError,
+    UserNotFoundError,
+)
 from app.core.policies import is_admin, is_superadmin
 from app.enums import ProductStatus
 from app.repositories.authentication import AuthenticationRepository
@@ -23,11 +28,8 @@ def _delete_owned_products(
     for product in product_repo.get_by_owner_for_update(owner_id):
         if product_repo.has_bids(product.id):
             if product.status in UNSETTLED_AUCTION_STATUSES:
-                raise HTTPException(
-                    status_code=status.HTTP_409_CONFLICT,
-                    detail=(
-                        "This account has auctions with bids that are not settled yet."
-                    ),
+                raise ConflictError(
+                    "This account has auctions with bids that are not settled yet."
                 )
 
             # Products with bids stay for history.
@@ -51,10 +53,7 @@ def delete_my_account(
 ):
 
     if is_superadmin(current_user):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Superadmin accounts cannot be deleted.",
-        )
+        raise ForbiddenError("Superadmin accounts cannot be deleted.")
     try:
         _delete_owned_products(
             owner_id=int(current_user.id),
@@ -85,10 +84,7 @@ def delete_user_by_id(
     # Lock the user while validating and deleting.
     user_to_delete = user_repo.get_by_id_for_update(user_id)
     if not user_to_delete:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User is not found.",
-        )
+        raise UserNotFoundError()
 
     is_self = current_user.id == user_to_delete.id
     allowed = False
@@ -103,10 +99,7 @@ def delete_user_by_id(
         allowed = is_admin(current_user)
 
     if not allowed:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You do not have permission to perform this action.",
-        )
+        raise PermissionDeniedError()
     try:
         _delete_owned_products(
             owner_id=int(user_to_delete.id),

@@ -1,7 +1,11 @@
-from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app import models, schemas
+from app.core.exceptions import (
+    BadRequestError,
+    InvalidResetTokenError,
+    ResetTokenAlreadyUsedError,
+)
 from app.core.security import Hash
 from app.mailer.service import send_password_reset_email
 from app.repositories.authentication import AuthenticationRepository
@@ -44,10 +48,7 @@ def reset_password(
     user = user_repo.get_by_id(db_token.user_id)
 
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid password reset token",
-        )
+        raise InvalidResetTokenError()
 
     # revoking the token
 
@@ -56,18 +57,12 @@ def reset_password(
 
         if affected_rows != 1:
             db.rollback()
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Password reset token has already been used",
-            )
+            raise ResetTokenAlreadyUsedError()
 
         # updating user's password and make sure that it's not the same as the old password
 
         if Hash.verify_password(request.new_password, user.password):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="New password cannot be the same as the old password",
-            )
+            raise BadRequestError("New password cannot be the same as the old password")
         user.password = Hash.crypt_password(request.new_password)
 
         # revoking all existing reset tokens for the user --> terminating all the sessions for the user
@@ -96,18 +91,12 @@ def change_password(
 
     # Verify current password
     if not Hash.verify_password(request.current_password, current_user.password):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Current password is incorrect",
-        )
+        raise BadRequestError("Current password is incorrect")
 
     # Prevent using current password
 
     if Hash.verify_password(request.new_password, current_user.password):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="New password cannot be the same as the current password",
-        )
+        raise BadRequestError("New password cannot be the same as the current password")
 
     try:
         # update the user's password with the new password
