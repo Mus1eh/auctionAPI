@@ -1,11 +1,12 @@
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.core.limits import INT_MAX, PRODUCT_DESCRIPTION_MAX, PRODUCT_NAME_MAX
+from app.core.limits import INT_MAX
+from app.schemas.validator import ProductDescription, ProductName
 
 
 class ProductCSVImport(BaseModel):
-    name: str = Field(min_length=1, max_length=PRODUCT_NAME_MAX)
-    description: str | None = Field(default=None, max_length=PRODUCT_DESCRIPTION_MAX)
+    name: ProductName
+    description: ProductDescription | None = None
     start_price: int = Field(gt=0, le=INT_MAX)
 
     model_config = ConfigDict(

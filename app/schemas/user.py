@@ -1,3 +1,5 @@
+import re
+
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 from app.core.limits import (
@@ -17,8 +19,11 @@ class UserCreate(BaseModel):
     @field_validator("username")
     @classmethod
     def validate_username(cls, value: str) -> str:
-        if "@" in value:
-            raise ValueError("Username cannot contain '@'")
+        value = value.strip()
+
+        if not re.fullmatch(r"[A-Za-z0-9_.-]+", value):
+            raise ValueError("Invalid username.")
+
         return value
 
 

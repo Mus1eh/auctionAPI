@@ -22,6 +22,11 @@ class Settings(BaseSettings):
     smtp_password: str
     smtp_from_email: str
     frontend_url: str
+    environment: str = "development"
+    cors_origins: list[str] = [
+        "http://localhost:5173",
+        "http://localhost:3000",
+    ]
 
     rate_limit_storage: str
 
