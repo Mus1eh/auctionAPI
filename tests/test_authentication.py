@@ -1,5 +1,8 @@
+from datetime import UTC, datetime, timedelta
+
 from app import models
-from app.hashing import Hash
+from app.core.security import Hash
+from app.services.authentication.refresh_tokens import hash_token
 
 
 def test_login_with_username_and_email(client, make_user):
@@ -11,6 +14,35 @@ def test_login_with_username_and_email(client, make_user):
         assert response.status_code == 200, response.text
         assert response.json()["access_token"]
         assert response.json()["refresh_token"]
+
+
+def test_existing_account_with_at_sign_in_username_can_login(
+    client, db_session, make_user
+):
+    # NEW USERNAMES CAN'T CONTAIN @, BUT ACCOUNTS FROM BEFORE THAT RULE MUST KEEP WORKING
+    user = make_user()
+    user.username = "sam@home"
+    db_session.flush()
+
+    for identifier in (user.username, user.email):
+        response = client.post(
+            "/auth/", data={"username": identifier, "password": "TestPassword123!"}
+        )
+        assert response.status_code == 200, response.text
+
+
+def test_email_owner_can_login_when_old_username_matches_their_email(
+    client, db_session, make_user
+):
+    owner, lookalike = make_user(), make_user()
+    owner.email = "owner@example.com"
+    lookalike.username = owner.email
+    db_session.flush()
+
+    response = client.post(
+        "/auth/", data={"username": owner.email, "password": "TestPassword123!"}
+    )
+    assert response.status_code == 200, response.text
 
 
 def test_invalid_credentials(client, make_user):
@@ -134,11 +166,13 @@ def test_forgot_password_unknown_email(client):
 
 
 def test_forgot_and_reset_password(client, db_session, make_user, monkeypatch):
-    import app.routers.authentication as auth_router
+    import app.services.authentication.password as password_service
 
     sent = []
     monkeypatch.setattr(
-        auth_router, "send_password_reset_email", lambda **kwargs: sent.append(kwargs)
+        password_service,
+        "send_password_reset_email",
+        lambda **kwargs: sent.append(kwargs),
     )
     user = make_user()
     response = client.post("/auth/forgot-password", json={"email": user.email})
@@ -175,3 +209,58 @@ def test_invalid_reset_token(client):
     assert client.post(
         "/auth/verify-token", json={"reset_token": "invalid"}
     ).status_code in (400, 401)
+
+
+def make_reset_token(
+    db_session, user, raw="reset-token", expires_in=timedelta(hours=1), used=False
+):
+    db_session.add(
+        models.PasswordResetToken(
+            user_id=user.id,
+            token_hash=hash_token(raw),
+            expires_at=datetime.now(UTC) + expires_in,
+            used_at=datetime.now(UTC) if used else None,
+        )
+    )
+    db_session.flush()
+    return raw
+
+
+def verify(client, token):
+    return client.post("/auth/verify-token", json={"reset_token": token})
+
+
+def test_verify_token_accepts_a_valid_token_and_leaks_nothing(
+    client, db_session, make_user
+):
+    raw = make_reset_token(db_session, make_user())
+
+    response = verify(client, raw)
+
+    assert response.status_code == 200, response.text
+    assert response.json() == {"message": "Password reset token is valid"}
+
+
+def test_verify_token_rejects_an_expired_token(client, db_session, make_user):
+    raw = make_reset_token(db_session, make_user(), expires_in=-timedelta(minutes=1))
+
+    response = verify(client, raw)
+
+    assert response.status_code == 400
+    assert response.json() == {"detail": "Password reset token has expired"}
+
+
+def test_verify_token_rejects_a_used_token(client, db_session, make_user):
+    raw = make_reset_token(db_session, make_user(), used=True)
+
+    response = verify(client, raw)
+
+    assert response.status_code == 400
+    assert response.json() == {"detail": "Password reset token has already been used"}
+
+
+def test_verify_token_rejects_an_unknown_token(client):
+    response = verify(client, "never-issued")
+
+    assert response.status_code == 400
+    assert response.json() == {"detail": "Invalid password reset token"}

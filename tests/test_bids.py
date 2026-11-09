@@ -95,18 +95,60 @@ def test_expired_auction_rejects_bid(client, make_user, make_product, auth):
 
 def test_list_bids_and_pagination(client, make_user, make_product, make_bid):
     owner, bidder = make_user(), make_user()
-    product = make_product(owner)
+    product = make_product(owner, ProductStatus.ACTIVE)
     make_bid(product, bidder, 600)
     make_bid(product, bidder, 700)
     response = client.get(f"/bids/{product.id}?page=1&limit=1")
     assert response.status_code == 200
-    assert len(response.json()) == 1
-    assert response.json()[0]["amount"] == 700
-    assert client.get(f"/bids/{product.id}?page=2&limit=1").json()[0]["amount"] == 600
+    assert len(response.json()["items"]) == 1
+    assert response.json()["items"][0]["amount"] == 700
+    assert response.json()["total"] == 2
+    second = client.get(f"/bids/{product.id}?page=2&limit=1").json()
+    assert second["items"][0]["amount"] == 600
+    assert second["total"] == 2
+    assert client.get(f"/bids/{product.id}?page=3&limit=1").json()["items"] == []
 
 
 def test_list_bids_missing_product(client):
     assert client.get("/bids/999999").status_code == 404
+
+
+@pytest.mark.parametrize("status", [ProductStatus.DRAFT, ProductStatus.REJECTED])
+def test_private_product_bids_hidden_from_others(
+    client, make_user, make_product, make_bid, auth, status
+):
+    owner, bidder = make_user(), make_user()
+    product = make_product(owner, status)
+    make_bid(product, bidder, 600)
+    assert client.get(f"/bids/{product.id}").status_code == 404
+    assert (
+        client.get(f"/bids/{product.id}", headers=auth(bidder)).status_code == 404
+    )
+
+
+@pytest.mark.parametrize("status", [ProductStatus.DRAFT, ProductStatus.REJECTED])
+def test_private_product_bids_visible_to_owner_and_admin(
+    client, make_user, make_product, make_bid, auth, status
+):
+    owner, bidder = make_user(), make_user()
+    product = make_product(owner, status)
+    make_bid(product, bidder, 600)
+    for viewer in (owner, make_user("admin")):
+        response = client.get(f"/bids/{product.id}", headers=auth(viewer))
+        assert response.status_code == 200
+        assert len(response.json()["items"]) == 1
+
+
+@pytest.mark.parametrize("status", [ProductStatus.CLOSED, ProductStatus.SOLD])
+def test_public_product_bids_visible_without_login(
+    client, make_user, make_product, make_bid, status
+):
+    owner, bidder = make_user(), make_user()
+    product = make_product(owner, status)
+    make_bid(product, bidder, 600)
+    response = client.get(f"/bids/{product.id}")
+    assert response.status_code == 200
+    assert len(response.json()["items"]) == 1
 
 
 @pytest.mark.parametrize("query", ["page=0", "limit=0", "limit=21"])

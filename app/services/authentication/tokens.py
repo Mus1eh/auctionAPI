@@ -1,0 +1,46 @@
+from sqlalchemy.orm import Session
+
+from app import schemas
+from app.core.exceptions import UnauthorizedError
+from app.core.security import create_access_token
+from app.repositories.authentication import AuthenticationRepository
+from app.repositories.user import UserRepository
+from app.services.authentication.refresh_tokens import (
+    create_refresh_token,
+    verify_refresh_token,
+)
+
+
+def refresh_token(
+    request: schemas.RefreshTokenRequest,
+    db: Session,
+    auth_repo: AuthenticationRepository,
+    user_repo: UserRepository,
+):
+
+    db_token = verify_refresh_token(auth_repo, request.refresh_token)
+
+    user = user_repo.get_by_id(db_token.user_id)
+
+    if not user:
+        raise UnauthorizedError("user no longer exists")
+
+    affected_rows = auth_repo.refresh_token_update(db_token)
+
+    if affected_rows != 1:
+        db.rollback()
+        raise UnauthorizedError("Failed to revoke the refresh token.")
+    try:
+        new_refresh_token = create_refresh_token(auth_repo, user.id)
+
+        new_access_token = create_access_token(data={"sub": user.username})
+
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+    return {
+        "access_token": new_access_token,
+        "refresh_token": new_refresh_token,
+        "token_type": "bearer",
+    }

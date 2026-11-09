@@ -1,44 +1,69 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import or_
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from app import models, schemas
-from app.database import get_db
-from app.hashing import Hash
+from app.core.database import get_db
+from app.dependencies import (
+    get_auth_repo,
+    get_product_repo,
+    get_product_status_request_repo,
+    get_user_repo,
+    limit_by_ip,
+)
 from app.oauth2 import get_current_user
+from app.repositories.authentication import AuthenticationRepository
+from app.repositories.product import ProductRepository
+from app.repositories.product_status_request import ProductStatusRequestRepository
+from app.repositories.user import UserRepository
+from app.services.users.create import create_user as create_user_service
+from app.services.users.delete import delete_my_account as delete_my_account_service
+from app.services.users.delete import delete_user_by_id as delete_user_by_id_service
+from app.services.users.get import get_user_by_id as get_user_by_id_service
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
 
-@router.post("/", response_model=schemas.UserShow, status_code=status.HTTP_201_CREATED)
-def create_user(request: schemas.UserCreate, db: Session = Depends(get_db)):
-    existing_user = (
-        db.query(models.User)
-        .filter(
-            or_(
-                models.User.username == request.username,
-                models.User.email == request.email,
-            )
-        )
-        .first()
+@router.post(
+    "/",
+    response_model=schemas.UserShow,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(limit_by_ip("register", "5/hour"))],
+)
+def create_user(
+    request: schemas.UserCreate,
+    db: Session = Depends(get_db),
+    user_repo: UserRepository = Depends(get_user_repo),
+):
+    return create_user_service(db=db, request=request, user_repo=user_repo)
+
+
+# DELETE MY OWN ACCOUNT -> MUST BE ABOVE "/{id}" ROUTES SO "me" ISN'T PARSED AS AN ID
+@router.delete("/me", status_code=status.HTTP_202_ACCEPTED)
+def delete_my_account(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+    user_repo: UserRepository = Depends(get_user_repo),
+    auth_repo: AuthenticationRepository = Depends(get_auth_repo),
+    product_repo: ProductRepository = Depends(get_product_repo),
+    status_repo: ProductStatusRequestRepository = Depends(
+        get_product_status_request_repo
+    ),
+):
+    return delete_my_account_service(
+        db=db,
+        current_user=current_user,
+        user_repo=user_repo,
+        auth_repo=auth_repo,
+        product_repo=product_repo,
+        status_repo=status_repo,
     )
 
-    if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Username or email already exists.",
-        )
 
-    new_user = models.User(
-        username=request.username,
-        email=request.email,
-        password=Hash.crypt_password(request.password),
-        role_name="user",
-    )
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-    return new_user
+@router.get("/me", response_model=schemas.UserShow)
+def get_my_account(
+    current_user: models.User = Depends(get_current_user),
+):
+    return current_user
 
 
 @router.get("/{id}", response_model=schemas.UserShow)
@@ -46,18 +71,11 @@ def get_user(
     id: int,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
+    user_repo: UserRepository = Depends(get_user_repo),
 ):
-    user = db.query(models.User).filter(models.User.id == id).first()
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="User is not found."
-        )
-    if current_user.role_name not in ["admin", "superadmin"]:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You do not have permission to access this resource.",
-        )
-    return user
+    return get_user_by_id_service(
+        db=db, user_id=id, user_repo=user_repo, current_user=current_user
+    )
 
 
 @router.delete("/{id}", status_code=status.HTTP_202_ACCEPTED)
@@ -65,35 +83,19 @@ def delete_user(
     id: int,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
+    user_repo: UserRepository = Depends(get_user_repo),
+    auth_repo: AuthenticationRepository = Depends(get_auth_repo),
+    product_repo: ProductRepository = Depends(get_product_repo),
+    status_repo: ProductStatusRequestRepository = Depends(
+        get_product_status_request_repo
+    ),
 ):
-    user = db.query(models.User).filter(models.User.id == id).first()
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="User is not found."
-        )
-    if user.role_name in ["admin", "superadmin"]:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You do not have permission to perform this action.",
-        )
-    if user.role_name == "admin" and current_user.role_name != "superadmin":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You do not have permission to perform this action.",
-        )
-    if (
-        current_user.role_name not in ["admin", "superadmin"]
-        and current_user.id != user.id
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You do not have permission to perform this action.",
-        )
-    if user.role_name == "superadmin":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You do not have permission to perform this action.",
-        )
-    db.delete(user)
-    db.commit()
-    return {"message": "User deleted successfully"}
+    return delete_user_by_id_service(
+        db=db,
+        user_id=id,
+        current_user=current_user,
+        user_repo=user_repo,
+        auth_repo=auth_repo,
+        product_repo=product_repo,
+        status_repo=status_repo,
+    )

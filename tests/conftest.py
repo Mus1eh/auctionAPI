@@ -8,7 +8,7 @@ from uuid import uuid4
 import pytest
 from dotenv import load_dotenv
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.engine import make_url
 from sqlalchemy.orm import Session
 
@@ -36,17 +36,46 @@ if os.getenv("SQLALCHEMY_URL"):
         raise RuntimeError("Test and development databases must be different")
 
 from app import models
-from app.database import Base, get_db
+from app.core.database import Base, get_db
+from app.core.security import Hash, create_access_token
+from app.dependencies import get_rate_limiter
 from app.enums import ProductStatus
-from app.hashing import Hash
 from app.main import app
-from app.oauth2 import create_access_token
 
 engine = create_engine(TEST_DATABASE_URL)
 
 
+class NoRateLimiter:
+    """Never refuses anything. The whole suite calls the API from one IP, so real
+    limits would turn ordinary tests into 429s. test_rate_limit.py swaps in a real one."""
+
+    def check(self, scope, key, rule):
+        pass
+
+    def ensure_allowed(self, scope, key, rule):
+        pass
+
+    def record(self, scope, key, rule):
+        pass
+
+    def clear(self, scope, key, rule):
+        pass
+
+
+@pytest.fixture(autouse=True)
+def rate_limiting_off():
+    app.dependency_overrides[get_rate_limiter] = NoRateLimiter
+    yield
+    app.dependency_overrides.pop(get_rate_limiter, None)
+
+
 @pytest.fixture(scope="session", autouse=True)
 def schema():
+    # Rebuild from the current models so new columns reach the test database.
+    # CASCADE because products and bids reference each other, which drop_all can't order.
+    with engine.begin() as conn:
+        for table_name in Base.metadata.tables:
+            conn.execute(text(f'DROP TABLE IF EXISTS "{table_name}" CASCADE'))
     Base.metadata.create_all(bind=engine)
     yield
     engine.dispose()

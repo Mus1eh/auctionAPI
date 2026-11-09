@@ -1,21 +1,19 @@
-import os
-
-from dotenv import load_dotenv
 from sqlalchemy import or_
 
 from app import models
-from app.database import sessionLocal
-from app.hashing import Hash
+from app.core.config import SeedSettings
+from app.core.database import sessionLocal
+from app.core.security import Hash
 
-load_dotenv()
+seed_settings = SeedSettings()
 
-SUPERADMIN_USERNAME = os.environ["SUPERADMIN_USERNAME"]
-SUPERADMIN_EMAIL = os.environ["SUPERADMIN_EMAIL"]
-SUPERADMIN_PASSWORD = os.environ["SUPERADMIN_PASSWORD"]
+SUPERADMIN_USERNAME = seed_settings.superadmin_username
+SUPERADMIN_EMAIL = seed_settings.superadmin_email
+SUPERADMIN_PASSWORD = seed_settings.superadmin_password
 
-ADMIN_USERNAME = os.environ["ADMIN_USERNAME"]
-ADMIN_EMAIL = os.environ["ADMIN_EMAIL"]
-ADMIN_PASSWORD = os.environ["ADMIN_PASSWORD"]
+ADMIN_USERNAME = seed_settings.admin_username
+ADMIN_EMAIL = seed_settings.admin_email
+ADMIN_PASSWORD = seed_settings.admin_password
 
 
 def seed_database():
