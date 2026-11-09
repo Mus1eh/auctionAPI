@@ -24,19 +24,16 @@ def approve_status_request(
     current_user: models.User,
 ):
     try:
-        # Read request to identify the product.
         status_request = status_repo.get_by_id(request_id)
 
         if status_request is None:
             raise StatusRequestNotFoundError()
 
-        # Lock product first.
         product = product_repo.get_by_id_for_update(status_request.product_id)
 
         if product is None:
             raise ProductNotFoundError()
 
-        # Lock and refresh the status request.
         status_request = status_repo.get_by_id_for_update(request_id)
 
         if status_request is None:
@@ -55,7 +52,6 @@ def approve_status_request(
                 "Product status has changed. Request cannot be approved."
             )
 
-        # Activate the auction.
         now = datetime.now(UTC)
 
         product_repo.update(
@@ -66,8 +62,6 @@ def approve_status_request(
                 "auction_ends_at": now + timedelta(hours=1),
             },
         )
-
-        # Record the admin approval.
         status_repo.update(
             status_request,
             {

@@ -41,12 +41,21 @@ class ProductRepository:
         self,
         owner_id: int,
         include_deleted: bool = False,
+        limit: int | None = None,
+        offset: int | None = None,
     ):
-        return (
+
+        query = (
             self._query(include_deleted)
             .filter(models.Product.owner_id == owner_id)
-            .all()
+            .order_by(models.Product.id.asc())
         )
+        total = query.count()
+        if offset:
+            query = query.offset(offset)
+        if limit:
+            query = query.limit(limit)
+        return query.all(), total
 
     def get_by_owner_for_update(self, owner_id: int):
         return (
@@ -62,23 +71,45 @@ class ProductRepository:
         product_status: ProductStatus,
         owner_id: int | None = None,
         include_deleted: bool = False,
+        limit: int | None = None,
+        offset: int | None = None,
     ):
-        query = self._query(include_deleted).filter(
-            models.Product.status == product_status
+        query = (
+            self._query(include_deleted)
+            .filter(models.Product.status == product_status)
+            .order_by(models.Product.id.asc())
         )
 
         if owner_id is not None:
             query = query.filter(models.Product.owner_id == owner_id)
 
-        return query.all()
+        total = query.count()
 
-    def get_all_by_status(self, product_status: ProductStatus):
-        return (
+        if offset:
+            query = query.offset(offset)
+        if limit:
+            query = query.limit(limit)
+
+        return query.all(), total
+
+    def get_all_by_status(
+        self,
+        product_status: ProductStatus,
+        limit: int | None = None,
+        offset: int | None = None,
+    ):
+        query = (
             self._query()
             .filter(models.Product.status == product_status)
             .order_by(models.Product.id.asc())
-            .all()
         )
+        total = query.count()
+
+        if offset:
+            query = query.offset(offset)
+        if limit:
+            query = query.limit(limit)
+        return query.all(), total
 
     def create(self, product: models.Product):
         self.db.add(product)

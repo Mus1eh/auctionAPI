@@ -36,15 +36,20 @@ class ProductStatusRequestRepository:
             },
         )
 
-    def get_all_pending(self):
-        return (
+    def get_all_pending(self, limit: int | None = None, offset: int | None = None):
+        query = (
             self.db.query(models.ProductStatusRequest)
             .filter(
                 models.ProductStatusRequest.approval_status == ApprovalStatus.PENDING
             )
             .order_by(models.ProductStatusRequest.created_at.asc())
-            .all()
         )
+        total = query.count()
+        if offset:
+            query = query.offset(offset)
+        if limit:
+            query = query.limit(limit)
+        return query.all(), total
 
     def create(self, status_request: models.ProductStatusRequest):
         self.db.add(status_request)

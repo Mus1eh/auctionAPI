@@ -1,6 +1,6 @@
 from functools import lru_cache
 
-from fastapi import Depends, Request
+from fastapi import Depends, Query, Request
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -12,6 +12,7 @@ from app.repositories.email_outbox import EmailOutboxRepository
 from app.repositories.product import ProductRepository
 from app.repositories.product_status_request import ProductStatusRequestRepository
 from app.repositories.user import UserRepository
+from app.schemas.pagination import Pagination
 
 
 def get_product_repo(db: Session = Depends(get_db)) -> ProductRepository:
@@ -38,6 +39,12 @@ def get_auth_repo(db: Session = Depends(get_db)) -> AuthenticationRepository:
 
 def get_email_outbox_repo(db: Session = Depends(get_db)) -> EmailOutboxRepository:
     return EmailOutboxRepository(db)
+
+
+def get_pagination(
+    limit: int = Query(20, ge=1, le=20), page: int = Query(1, ge=1)
+) -> Pagination:
+    return Pagination(limit=limit, page=page)
 
 
 # Rate limiter is cached so we use the same instance of all requests

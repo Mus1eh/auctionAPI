@@ -6,12 +6,12 @@ from app.services.products.get import get_product
 
 def get_bids_for_product(
     product_id: int,
-    page: int,
+    offset: int,
     limit: int,
     product_repo: ProductRepository,
     bid_repo: BidRepository,
     current_user: models.User | None,
-):
+) -> tuple[list[models.Bids], int]:
     # Raises 404 if the product is missing or private to someone else.
     get_product(
         repo=product_repo,
@@ -19,4 +19,4 @@ def get_bids_for_product(
         current_user=current_user,
     )
 
-    return bid_repo.get_bids_for_product(product_id, page, limit)
+    return bid_repo.get_bids_for_product(product_id, offset, limit)

@@ -1,6 +1,7 @@
 import { PackageOpen, Search, SearchX } from 'lucide-react'
 import { useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router'
+import { PAGE_SIZE } from '@/api/endpoints'
 import { useProductsByStatus } from '@/api/queries'
 import { isPrivateStatus, PRODUCT_STATUSES, type ProductStatus } from '@/api/types'
 import { useAuth } from '@/auth/AuthContext'
@@ -9,6 +10,7 @@ import { STATUS_META } from '@/components/product/status'
 import { Button } from '@/components/ui/Button'
 import { buttonClasses } from '@/components/ui/buttonStyles'
 import { Input, Select } from '@/components/ui/Field'
+import { Pager } from '@/components/ui/Pager'
 import { EmptyState, ErrorState } from '@/components/ui/States'
 import { cn } from '@/lib/cn'
 import { filterAndSortProducts, SORT_OPTIONS, type SortKey } from '@/lib/products'
@@ -38,10 +40,13 @@ export function MarketplacePage() {
   const sortParam = params.get('sort')
   const sort: SortKey = isSort(sortParam) ? sortParam : status === 'active' ? 'ending' : 'newest'
 
-  const { data, isPending, isError, error, refetch, isFetching } = useProductsByStatus(status)
+  const pageParam = Number(params.get('page'))
+  const page = Number.isInteger(pageParam) && pageParam > 0 ? pageParam : 1
+
+  const { data, isPending, isError, error, refetch, isFetching, isPlaceholderData } = useProductsByStatus(status, page)
   // Draft/ended listings are private to their owner, so only signed-in users get those tabs.
   const tabs = PRODUCT_STATUSES.filter((s) => authStatus === 'authenticated' || !isPrivateStatus(s))
-  const products = useMemo(() => filterAndSortProducts(data ?? [], query, sort), [data, query, sort])
+  const products = useMemo(() => filterAndSortProducts(data?.items ?? [], query, sort), [data, query, sort])
 
   const update = (changes: Record<string, string | null>) => {
     const next = new URLSearchParams(params)
@@ -49,6 +54,8 @@ export function MarketplacePage() {
       if (value) next.set(key, value)
       else next.delete(key)
     }
+    // Changing the tab, search or sort starts again from the first page.
+    if (!('page' in changes)) next.delete('page')
     setParams(next, { replace: true })
   }
 
@@ -93,7 +100,7 @@ export function MarketplacePage() {
               >
                 {s === 'active' && <span className={cn('size-1.5 rounded-full', s === status ? 'bg-brand-300' : 'bg-brand-500')} />}
                 {TAB_LABELS[s]}
-                {s === status && data && <span className="rounded-full bg-white/20 px-1.5 text-xs tabular">{data.length}</span>}
+                {s === status && data && <span className="rounded-full bg-white/20 px-1.5 text-xs tabular">{data.total}</span>}
               </button>
             ))}
           </div>
@@ -102,8 +109,8 @@ export function MarketplacePage() {
               <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-stone-400" aria-hidden />
               <Input
                 type="search"
-                aria-label="Search listings"
-                placeholder="Search by name or description"
+                aria-label="Search listings on this page"
+                placeholder="Search this page"
                 value={query}
                 onChange={(e) => update({ q: e.target.value || null })}
                 className="pl-9"
@@ -124,7 +131,7 @@ export function MarketplacePage() {
             ? 'Loading listings…'
             : isError
               ? null
-              : `${products.length} ${products.length === 1 ? 'listing' : 'listings'} · ${STATUS_META[status].description}${isFetching ? ' · Updating…' : ''}`}
+              : `${query ? `${products.length} of ${data?.items.length ?? 0} on this page match · ` : ''}${data?.total ?? 0} ${data?.total === 1 ? 'listing' : 'listings'} · ${STATUS_META[status].description}${isFetching ? ' · Updating…' : ''}`}
         </p>
 
         {isPending ? (
@@ -136,7 +143,18 @@ export function MarketplacePage() {
         ) : isError ? (
           <ErrorState title="Could not load listings" error={error} onRetry={() => refetch()} />
         ) : products.length === 0 ? (
-          query ? (
+          page > 1 && data.items.length === 0 ? (
+            <EmptyState
+              icon={PackageOpen}
+              title="No listings on this page"
+              description="The list has fewer pages than this."
+              action={
+                <Button variant="secondary" onClick={() => update({ page: null })}>
+                  Back to the first page
+                </Button>
+              }
+            />
+          ) : query ? (
             <EmptyState
               icon={SearchX}
               title="No matching listings"
@@ -173,6 +191,15 @@ export function MarketplacePage() {
               <ProductCard key={product.id} product={product} />
             ))}
           </div>
+        )}
+        {data && (
+          <Pager
+            page={page}
+            total={data.total}
+            pageSize={PAGE_SIZE}
+            busy={isPlaceholderData}
+            onPageChange={(next) => update({ page: next > 1 ? String(next) : null })}
+          />
         )}
       </section>
     </div>

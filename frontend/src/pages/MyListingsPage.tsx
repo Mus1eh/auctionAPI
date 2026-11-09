@@ -1,6 +1,7 @@
 import { ChevronRight, PackageOpen, Plus } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router'
+import { PAGE_SIZE } from '@/api/endpoints'
 import { useMyProducts } from '@/api/queries'
 import { PRODUCT_STATUSES, type ProductStatus } from '@/api/types'
 import { PageHeader } from '@/components/layout/PageHeader'
@@ -10,6 +11,7 @@ import { ProductArt } from '@/components/product/ProductArt'
 import { StatusBadge } from '@/components/product/StatusBadge'
 import { STATUS_META } from '@/components/product/status'
 import { buttonClasses } from '@/components/ui/buttonStyles'
+import { Pager } from '@/components/ui/Pager'
 import { Card, CardHeader } from '@/components/ui/Card'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { EmptyState, ErrorState } from '@/components/ui/States'
@@ -19,21 +21,25 @@ import { formatPrice } from '@/lib/format'
 type Filter = ProductStatus | 'all'
 
 export function MyListingsPage() {
-  const { data, isPending, isError, error, refetch } = useMyProducts()
+  const [page, setPage] = useState(1)
+  const { data, isPending, isError, error, refetch, isPlaceholderData } = useMyProducts(page)
   const [filter, setFilter] = useState<Filter>('all')
+  const items = useMemo(() => data?.items ?? [], [data])
 
-  const counts = useMemo(() => {
-    const result: Record<string, number> = { all: data?.length ?? 0 }
-    for (const p of data ?? []) result[p.status] = (result[p.status] ?? 0) + 1
+  // The API counts all listings, but only the ones on this page can be split by status, so the
+  // status filters hide statuses that are not on the current page and show no count.
+  const onPage = useMemo(() => {
+    const result: Record<string, number> = {}
+    for (const p of items) result[p.status] = (result[p.status] ?? 0) + 1
     return result
-  }, [data])
+  }, [items])
 
   const visible = useMemo(
-    () => [...(data ?? [])].filter((p) => filter === 'all' || p.status === filter).sort((a, b) => b.id - a.id),
-    [data, filter],
+    () => [...items].filter((p) => filter === 'all' || p.status === filter).sort((a, b) => b.id - a.id),
+    [items, filter],
   )
 
-  const filters: Filter[] = ['all', ...PRODUCT_STATUSES.filter((s) => counts[s])]
+  const filters: Filter[] = ['all', ...PRODUCT_STATUSES.filter((s) => onPage[s])]
 
   return (
     <div className="space-y-8">
@@ -50,7 +56,7 @@ export function MyListingsPage() {
 
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
         <section aria-label="Your listings" className="space-y-4">
-          {data && data.length > 0 && (
+          {data && data.items.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
               {filters.map((f) => (
                 <button
@@ -63,7 +69,8 @@ export function MyListingsPage() {
                     filter === f ? 'bg-stone-900 text-white ring-stone-900' : 'bg-white text-stone-600 ring-stone-200 hover:bg-stone-50',
                   )}
                 >
-                  {f === 'all' ? 'All' : STATUS_META[f].label} <span className="ml-1 tabular opacity-70">{counts[f] ?? 0}</span>
+                  {f === 'all' ? 'All' : STATUS_META[f].label}
+                  {f === 'all' && <span className="ml-1 tabular opacity-70">{data?.total}</span>}
                 </button>
               ))}
             </div>
@@ -77,7 +84,7 @@ export function MyListingsPage() {
             </div>
           ) : isError ? (
             <ErrorState title="Could not load your listings" error={error} onRetry={() => refetch()} />
-          ) : data.length === 0 ? (
+          ) : data.items.length === 0 && page === 1 ? (
             <EmptyState
               icon={PackageOpen}
               title="You haven't listed anything yet"
@@ -115,6 +122,9 @@ export function MyListingsPage() {
                 </li>
               ))}
             </ul>
+          )}
+          {data && (
+            <Pager page={page} total={data.total} pageSize={PAGE_SIZE} busy={isPlaceholderData} onPageChange={setPage} />
           )}
         </section>
 

@@ -112,7 +112,7 @@ export function BidPanel({ product, isOwner, bidCount }: { product: Product; isO
           {formatPrice(product.current_price)}
         </p>
         <p className="mt-1 text-sm text-stone-500">
-          {bidCount === null ? null : bidCount === 0 ? 'No bids yet' : `${bidCount}${bidCount >= 10 ? '+' : ''} ${bidCount === 1 ? 'bid' : 'bids'}`}
+          {bidCount === null ? null : bidCount === 0 ? 'No bids yet' : `${bidCount} ${bidCount === 1 ? 'bid' : 'bids'}`}
           {raised && ` · started at ${formatPrice(product.start_price)}`}
         </p>
       </div>

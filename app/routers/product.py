@@ -3,11 +3,16 @@ from sqlalchemy.orm import Session
 
 from app import models, schemas
 from app.core.database import get_db
-from app.dependencies import get_product_repo, get_product_status_request_repo
+from app.dependencies import (
+    get_pagination,
+    get_product_repo,
+    get_product_status_request_repo,
+)
 from app.enums import ProductStatus
 from app.oauth2 import get_current_user, get_current_user_optional
 from app.repositories.product import ProductRepository
 from app.repositories.product_status_request import ProductStatusRequestRepository
+from app.schemas.pagination import Page, Pagination
 from app.services.products.create import create_product as create_product_service
 from app.services.products.csv import (
     import_products_csv as import_products_csv_service,
@@ -51,15 +56,19 @@ def create_product(
 
 # GET MY PRODUCTS
 @router.get(
-    "/my", response_model=list[schemas.ProductShow], response_model_exclude_none=True
+    "/my", response_model=Page[schemas.ProductShow], response_model_exclude_none=True
 )
 def get_my_products(
     current_user: models.User = Depends(get_current_user),
     repo: ProductRepository = Depends(get_product_repo),
+    p: Pagination = Depends(get_pagination),
 ):
-    return get_my_product_service(
-        repo=repo,
-        current_user=current_user,
+    items, total = get_my_product_service(
+        repo=repo, current_user=current_user, limit=p.limit, offset=p.offset
+    )
+    return Page(
+        items=items,
+        total=total,
     )
 
 
@@ -67,18 +76,25 @@ def get_my_products(
 # AND FRONT END CAN HANDLE IT BETTER AND ALSO WE CAN ADD PAGINATION LATER ON
 @router.get(
     "/status/{stat}",
-    response_model=list[schemas.ProductShow],
+    response_model=Page[schemas.ProductShow],
     response_model_exclude_none=True,
 )
 def get_products(
     stat: ProductStatus,
     current_user: models.User | None = Depends(get_current_user_optional),
     repo: ProductRepository = Depends(get_product_repo),
+    p: Pagination = Depends(get_pagination),
 ):
-    return get_by_status_service(
+    items, total = get_by_status_service(
         repo=repo,
         product_status=stat,
         current_user=current_user,
+        limit=p.limit,
+        offset=p.offset,
+    )
+    return Page(
+        items=items,
+        total=total,
     )
 
 

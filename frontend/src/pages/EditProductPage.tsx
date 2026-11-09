@@ -2,7 +2,7 @@ import { PackageX } from 'lucide-react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { toast } from 'sonner'
 import { isApiError } from '@/api/client'
-import { useMyProducts, usePatchProduct, useProduct } from '@/api/queries'
+import { useMe, usePatchProduct, useProduct } from '@/api/queries'
 import type { ProductPatch } from '@/api/types'
 import { useAuth } from '@/auth/AuthContext'
 import { PageHeader } from '@/components/layout/PageHeader'
@@ -17,7 +17,7 @@ export function EditProductPage() {
   const navigate = useNavigate()
   const { isAdmin } = useAuth()
   const { data: product, isPending, isError, error, refetch } = useProduct(id)
-  const mine = useMyProducts()
+  const me = useMe()
   const patch = usePatchProduct(id)
 
   if (isApiError(error, 404) || !Number.isInteger(id)) {
@@ -30,10 +30,10 @@ export function EditProductPage() {
       />
     )
   }
-  if (isPending || mine.isPending) return <PageLoader />
+  if (isPending || me.isPending) return <PageLoader />
   if (isError) return <ErrorState error={error} onRetry={() => refetch()} />
 
-  const isOwner = mine.data?.some((p) => p.id === id) ?? false
+  const isOwner = me.data?.id === product.owner_id
   if (!isOwner && !isAdmin) return <AccessDenied message="Only the seller or an admin can edit this listing." />
 
   return (

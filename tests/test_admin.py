@@ -29,7 +29,7 @@ def test_admin_list_pending_requests(client, make_user, make_product, auth):
     )
     response = client.get("/admin/status-request/pending", headers=auth(admin))
     assert response.status_code == 200, response.text
-    assert any(item["product_id"] == product.id for item in response.json())
+    assert any(item["product_id"] == product.id for item in response.json()["items"])
 
 
 def test_approve_activation_request(client, db_session, make_user, make_product, auth):

@@ -18,18 +18,25 @@ describe('endpoints', () => {
   })
 
   it('lists products by status from /products/status/{status}', async () => {
-    const fetchMock = mockFetch({ 'GET /products/status/sold': [{ id: 1 }] })
-    await expect(productsApi.listByStatus('sold')).resolves.toEqual([{ id: 1 }])
-    expect(String(fetchMock.mock.calls[0][0])).toBe('/api/products/status/sold')
+    const fetchMock = mockFetch({ 'GET /products/status/sold': { items: [{ id: 1 }], total: 1 } })
+    await expect(productsApi.listByStatus('sold')).resolves.toEqual({ items: [{ id: 1 }], total: 1 })
+    expect(String(fetchMock.mock.calls[0][0])).toBe('/api/products/status/sold?page=1&limit=20')
   })
 
-  it('treats 404 "nothing found" list responses as empty lists', async () => {
-    mockFetch({
-      'GET /products/status/closed': jsonResponse({ detail: 'No products found.' }, 404),
-      'GET /products/my': jsonResponse({ detail: 'You have no products.' }, 404),
+  it('requests the page and size it is given, for every paginated list', async () => {
+    const fetchMock = mockFetch({
+      'GET /products/my': { items: [], total: 0 },
+      'GET /admin/products/status/draft': { items: [], total: 0 },
+      'GET /admin/status-request/pending': { items: [], total: 0 },
     })
-    await expect(productsApi.listByStatus('closed')).resolves.toEqual([])
-    await expect(productsApi.mine()).resolves.toEqual([])
+    await productsApi.mine(3)
+    await adminApi.productsByStatus('draft', 2, 1)
+    await adminApi.pendingRequests(4, 5)
+    expect(fetchMock.mock.calls.map(([u]) => String(u))).toEqual([
+      '/api/products/my?page=3&limit=20',
+      '/api/admin/products/status/draft?page=2&limit=1',
+      '/api/admin/status-request/pending?page=4&limit=5',
+    ])
   })
 
   it('does not hide server errors on list endpoints', async () => {
@@ -50,7 +57,7 @@ describe('endpoints', () => {
   })
 
   it('paginates bids with page and limit', async () => {
-    const fetchMock = mockFetch({ 'GET /bids/4': [] })
+    const fetchMock = mockFetch({ 'GET /bids/4': { items: [], total: 0 } })
     await bidsApi.list(4, 3)
     expect(String(fetchMock.mock.calls[0][0])).toBe('/api/bids/4?page=3&limit=10')
   })

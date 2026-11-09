@@ -4,3 +4,7 @@
 2. restore -> app/repositories/product.py
 
 ##
+
+.offset((page - 1) \* limit)
+.limit(limit)
+another way to pagination

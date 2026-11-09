@@ -2,12 +2,14 @@ import { PackageOpen, Play, Square } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router";
 import { toast } from "sonner";
+import { PAGE_SIZE } from "@/api/endpoints";
 import { useAdminProductsByStatus, useSetProductStatus } from "@/api/queries";
 import type { Product } from "@/api/types";
 import { Countdown } from "@/components/product/Countdown";
 import { Button } from "@/components/ui/Button";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { Pager } from "@/components/ui/Pager";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { EmptyState, ErrorState } from "@/components/ui/States";
 import { formatPrice } from "@/lib/format";
@@ -25,8 +27,9 @@ function ProductList({
   title: string;
   description: string;
 }) {
-  const { data, isPending, isError, error, refetch } =
-    useAdminProductsByStatus(status);
+  const [page, setPage] = useState(1);
+  const { data, isPending, isError, error, refetch, isPlaceholderData } =
+    useAdminProductsByStatus(status, page);
   const setStatus = useSetProductStatus();
   const [selected, setSelected] = useState<Product | null>(null);
 
@@ -42,7 +45,7 @@ function ProductList({
         <div className="p-5">
           <ErrorState error={error} onRetry={() => refetch()} />
         </div>
-      ) : data.length === 0 ? (
+      ) : data.items.length === 0 && page === 1 ? (
         <div className="p-5">
           <EmptyState
             icon={PackageOpen}
@@ -52,7 +55,7 @@ function ProductList({
         </div>
       ) : (
         <ul className="max-h-[28rem] divide-y divide-stone-100 overflow-y-auto">
-          {[...data]
+          {[...data.items]
             .sort((a, b) => b.id - a.id)
             .map((product) => (
               <li
@@ -94,6 +97,11 @@ function ProductList({
               </li>
             ))}
         </ul>
+      )}
+      {data && (
+        <div className="border-t border-stone-100 px-5 py-3 sm:px-6">
+          <Pager page={page} total={data.total} pageSize={PAGE_SIZE} busy={isPlaceholderData} onPageChange={setPage} />
+        </div>
       )}
       <ConfirmDialog
         open={selected !== null}

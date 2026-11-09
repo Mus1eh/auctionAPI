@@ -1,7 +1,6 @@
 from app import models
 from app.core.exceptions import (
     BEARER_CHALLENGE,
-    NotFoundError,
     ProductNotFoundError,
     UnauthorizedError,
 )
@@ -37,18 +36,18 @@ def get_product(
 def get_my_product(
     repo: ProductRepository,
     current_user: models.User,
-):
-    products = repo.get_by_owner(current_user.id)
-
-    if not products:
-        raise ProductNotFoundError()
-    return products
+    limit: int,
+    offset: int,
+) -> tuple[list[models.Product], int]:
+    return repo.get_by_owner(current_user.id, limit=limit, offset=offset)
 
 
 def get_by_status(
     repo: ProductRepository,
     product_status: ProductStatus,
     current_user: models.User | None,
+    limit: int,
+    offset: int,
 ):
     # DRAFT AND REJECTED PRODUCTS ARE PRIVATE -> EVERY USER (ADMINS TOO) SEES ONLY THEIR OWN HERE
     # ADMINS SEE EVERYONE'S FROM THE ADMIN DASHBOARD (/admin/products/status/{stat})
@@ -63,15 +62,6 @@ def get_by_status(
 
     owner_id = current_user.id if is_private and current_user is not None else None
 
-    products = repo.get_by_status(product_status=product_status, owner_id=owner_id)
-
-    if not products:
-        detail = (
-            f"You have no {product_status.value} products."
-            if is_private
-            else "No products found."
-        )
-
-        raise NotFoundError(detail)
-
-    return products
+    return repo.get_by_status(
+        product_status=product_status, owner_id=owner_id, limit=limit, offset=offset
+    )

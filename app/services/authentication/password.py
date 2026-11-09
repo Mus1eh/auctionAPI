@@ -58,8 +58,6 @@ def reset_password(
     if not user:
         raise InvalidResetTokenError()
 
-    # revoking the token
-
     try:
         affected_rows = auth_repo.password_reset_token_update(db_token)
 
@@ -67,17 +65,11 @@ def reset_password(
             db.rollback()
             raise ResetTokenAlreadyUsedError()
 
-        # updating user's password and make sure that it's not the same as the old password
-
         if Hash.verify_password(request.new_password, user.password):
             raise BadRequestError("New password cannot be the same as the old password")
         user.password = Hash.crypt_password(request.new_password)
 
-        # revoking all existing reset tokens for the user --> terminating all the sessions for the user
-
         auth_repo.revoke_all_refresh_token_by_user_id(int(user.id))
-
-        # invalidating all the reset tokens for the user
 
         auth_repo.revoke_all_password_reset_token_by_user_id(int(user.id))
 
@@ -97,25 +89,16 @@ def change_password(
     auth_repo: AuthenticationRepository,
 ):
 
-    # Verify current password
     if not Hash.verify_password(request.current_password, current_user.password):
         raise BadRequestError("Current password is incorrect")
-
-    # Prevent using current password
 
     if Hash.verify_password(request.new_password, current_user.password):
         raise BadRequestError("New password cannot be the same as the current password")
 
     try:
-        # update the user's password with the new password
-
         current_user.password = Hash.crypt_password(request.new_password)
 
-        # Revoke all existing refresh tokens for the user to terminate all sessions
-
         auth_repo.revoke_all_refresh_token_by_user_id(int(current_user.id))
-
-        # Invalidate unused password reset tokens for the user
 
         auth_repo.revoke_all_password_reset_token_by_user_id(int(current_user.id))
 
@@ -130,7 +113,6 @@ def change_password(
 def verify_token(
     request: schemas.ResetPasswordToken, auth_repo: AuthenticationRepository
 ):
-    # Raises the same errors as reset_password when the token is unknown, used or expired.
     verify_password_reset_token(auth_repo, request.reset_token)
 
     return {"message": "Password reset token is valid"}

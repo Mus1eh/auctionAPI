@@ -2,7 +2,7 @@ import { ArrowLeft, PackageX } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { isApiError } from '@/api/client'
-import { useBids, useMyProducts, useProduct } from '@/api/queries'
+import { useBids, useMe, useProduct } from '@/api/queries'
 import { useAuth } from '@/auth/AuthContext'
 import { AdminControls } from '@/components/product/AdminControls'
 import { BidHistory } from '@/components/product/BidHistory'
@@ -36,7 +36,7 @@ export function ProductDetailPage() {
   const { status: authStatus, isAdmin } = useAuth()
   const [bidPage, setBidPage] = useState(1)
   const { data: product, isPending, isError, error, refetch } = useProduct(id)
-  const myProducts = useMyProducts(authStatus === 'authenticated')
+  const me = useMe(authStatus === 'authenticated')
   const live = product?.status === 'active'
   // Page 1 of bids is shared with BidHistory's cache; used for the bid count and the top bid.
   const firstPage = useBids(id, 1, live)
@@ -55,9 +55,8 @@ export function ProductDetailPage() {
   if (isPending) return <DetailSkeleton />
   if (isError) return <ErrorState title="Could not load this listing" error={error} onRetry={() => refetch()} />
 
-  const isOwner = myProducts.data?.some((p) => p.id === product.id) ?? false
-  // The API exposes no "current user" id; it can be inferred from any owned product.
-  const myUserId = myProducts.data?.[0]?.owner_id ?? null
+  const myUserId = me.data?.id ?? null
+  const isOwner = myUserId !== null && product.owner_id === myUserId
   const canManage = isOwner || isAdmin
   const meta = STATUS_META[product.status]
 
@@ -105,12 +104,12 @@ export function ProductDetailPage() {
               <span className="text-sm font-medium text-stone-700">{meta.description}</span>
               {product.status === 'active' && product.auction_ends_at && <Countdown endsAt={product.auction_ends_at} compact className="text-sm font-semibold" />}
             </div>
-            <BidPanel product={product} isOwner={isOwner} bidCount={firstPage.data?.length ?? null} />
+            <BidPanel product={product} isOwner={isOwner} bidCount={firstPage.data?.total ?? null} />
           </Card>
           {canManage && (
             <Card className="space-y-4 p-5 sm:p-6">
               <h2 className="text-sm font-semibold text-stone-900">{isOwner ? 'Manage your listing' : 'Manage listing'}</h2>
-              <ManageListing product={product} isOwner={isOwner} topBid={firstPage.data?.[0]} />
+              <ManageListing product={product} isOwner={isOwner} topBid={firstPage.data?.items[0]} />
               {isAdmin && <AdminControls product={product} />}
             </Card>
           )}

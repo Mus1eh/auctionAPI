@@ -4,7 +4,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { adminApi, bidsApi, productsApi, usersApi } from "./endpoints";
+import { adminApi, bidsApi, PAGE_SIZE, productsApi, usersApi } from "./endpoints";
 import type {
   BidDecision,
   ProductCreate,
@@ -18,19 +18,23 @@ export const queryKeys = {
   products: ["products"] as const,
   // Private statuses hold the signed-in user's own products, so they live under
   // the per-user "my-products" root and are dropped on sign-out.
-  productsByStatus: (status: ProductStatus) =>
+  productsByStatus: (status: ProductStatus, page = 1) =>
     isPrivateStatus(status)
-      ? (["my-products", "status", status] as const)
-      : (["products", "status", status] as const),
+      ? (["my-products", "status", status, page] as const)
+      : (["products", "status", status, page] as const),
   product: (id: number) => ["products", "detail", id] as const,
   myProducts: ["my-products"] as const,
+  myProductsPage: (page: number) => ["my-products", "mine", page] as const,
+  me: ["users", "me"] as const,
   bids: (productId: number) => ["bids", productId] as const,
   bidsPage: (productId: number, page: number) =>
     ["bids", productId, page] as const,
   adminProducts: ["admin", "products"] as const,
-  adminProductsByStatus: (status: ProductStatus) =>
-    ["admin", "products", status] as const,
+  adminProductsByStatus: (status: ProductStatus, page = 1, limit = PAGE_SIZE) =>
+    ["admin", "products", status, page, limit] as const,
   pendingRequests: ["admin", "pending-requests"] as const,
+  pendingRequestsPage: (page: number, limit: number) =>
+    ["admin", "pending-requests", page, limit] as const,
   adminDashboard: ["admin", "dashboard"] as const,
   user: (id: number) => ["users", id] as const,
 };
@@ -42,19 +46,25 @@ export const PRIVATE_QUERY_ROOTS = ["my-products", "admin", "users", "products"]
 /** The API has no push channel; active auctions are polled (as suggested in app/routers/bids.py). */
 export const LIVE_POLL_MS = 3000;
 
-export function useProductsByStatus(status: ProductStatus) {
+export function useProductsByStatus(status: ProductStatus, page = 1) {
   return useQuery({
-    queryKey: queryKeys.productsByStatus(status),
-    queryFn: () => productsApi.listByStatus(status),
+    queryKey: queryKeys.productsByStatus(status, page),
+    queryFn: () => productsApi.listByStatus(status, page),
+    placeholderData: keepPreviousData,
     refetchInterval: status === "active" ? LIVE_POLL_MS * 3 : false,
   });
 }
 
 /** Admin view: every user's products, including private draft/closed ones. */
-export function useAdminProductsByStatus(status: ProductStatus) {
+export function useAdminProductsByStatus(
+  status: ProductStatus,
+  page = 1,
+  limit = PAGE_SIZE,
+) {
   return useQuery({
-    queryKey: queryKeys.adminProductsByStatus(status),
-    queryFn: () => adminApi.productsByStatus(status),
+    queryKey: queryKeys.adminProductsByStatus(status, page, limit),
+    queryFn: () => adminApi.productsByStatus(status, page, limit),
+    placeholderData: keepPreviousData,
     refetchInterval: status === "active" ? LIVE_POLL_MS * 3 : false,
   });
 }
@@ -69,11 +79,22 @@ export function useProduct(id: number) {
   });
 }
 
-export function useMyProducts(enabled = true) {
+export function useMyProducts(page = 1, enabled = true) {
   return useQuery({
-    queryKey: queryKeys.myProducts,
-    queryFn: productsApi.mine,
+    queryKey: queryKeys.myProductsPage(page),
+    queryFn: () => productsApi.mine(page),
+    placeholderData: keepPreviousData,
     enabled,
+  });
+}
+
+/** The signed-in user; its id decides whether a product is the user's own. */
+export function useMe(enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.me,
+    queryFn: usersApi.me,
+    enabled,
+    staleTime: 5 * 60 * 1000,
   });
 }
 
@@ -94,10 +115,11 @@ export function useAdminDashboard() {
   });
 }
 
-export function usePendingRequests() {
+export function usePendingRequests(page = 1, limit = PAGE_SIZE) {
   return useQuery({
-    queryKey: queryKeys.pendingRequests,
-    queryFn: adminApi.pendingRequests,
+    queryKey: queryKeys.pendingRequestsPage(page, limit),
+    queryFn: () => adminApi.pendingRequests(page, limit),
+    placeholderData: keepPreviousData,
   });
 }
 

@@ -6,6 +6,7 @@ from app.core.database import get_db
 from app.dependencies import (
     get_bid_repo,
     get_email_outbox_repo,
+    get_pagination,
     get_product_repo,
     get_product_status_request_repo,
     get_user_repo,
@@ -18,6 +19,7 @@ from app.repositories.email_outbox import EmailOutboxRepository
 from app.repositories.product import ProductRepository
 from app.repositories.product_status_request import ProductStatusRequestRepository
 from app.repositories.user import UserRepository
+from app.schemas.pagination import Page, Pagination
 from app.services.admin.approve_status_request import (
     approve_status_request as approve_status_request_service,
 )
@@ -54,28 +56,42 @@ def admin_dashboard(current_user: models.User = Depends(get_current_user)):
 # ADMINS SEE PRODUCTS OF ANY STATUS FROM ALL USERS (INCLUDING DRAFT)
 @router.get(
     "/products/status/{stat}",
-    response_model=list[schemas.ProductShow],
+    response_model=Page[schemas.ProductShow],
     response_model_exclude_none=True,
 )
 def admin_get_products_by_status(
     stat: ProductStatus,
     repo: ProductRepository = Depends(get_product_repo),
+    p: Pagination = Depends(get_pagination),
 ):
-    return get_products_by_status_service(
+    items, total = get_products_by_status_service(
         repo=repo,
         product_status=stat,
+        limit=p.limit,
+        offset=p.offset,
+    )
+    return Page(
+        items=items,
+        total=total,
     )
 
 
 @router.get(
-    "/status-request/pending", response_model=list[schemas.ProductStatusRequestShow]
+    "/status-request/pending", response_model=Page[schemas.ProductStatusRequestShow]
 )
 def get_pending_status_request(
     status_repo: ProductStatusRequestRepository = Depends(
         get_product_status_request_repo
     ),
+    p: Pagination = Depends(get_pagination),
 ):
-    return get_pending_status_requests_service(status_repo=status_repo)
+    items, total = get_pending_status_requests_service(
+        status_repo=status_repo, limit=p.limit, offset=p.offset
+    )
+    return Page(
+        items=items,
+        total=total,
+    )
 
 
 @router.patch(

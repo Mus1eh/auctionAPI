@@ -19,7 +19,7 @@ interface BidHistoryProps {
 
 export function BidHistory({ productId, live, page, onPageChange, myUserId }: BidHistoryProps) {
   const { data, isPending, isError, error, refetch, isPlaceholderData } = useBids(productId, page, live)
-  const hasNext = (data?.length ?? 0) === BIDS_PAGE_SIZE
+  const hasNext = data ? page * BIDS_PAGE_SIZE < data.total : false
 
   return (
     <Card>
@@ -38,7 +38,7 @@ export function BidHistory({ productId, live, page, onPageChange, myUserId }: Bi
         <div className="p-5">
           <ErrorState title="Could not load bids" error={error} onRetry={() => refetch()} />
         </div>
-      ) : data.length === 0 ? (
+      ) : data.items.length === 0 ? (
         <div className="flex flex-col items-center px-6 py-12 text-center">
           <Gavel className="size-6 text-stone-300" aria-hidden />
           <p className="mt-3 text-sm font-medium text-stone-700">{page === 1 ? 'No bids yet' : 'No more bids'}</p>
@@ -55,7 +55,7 @@ export function BidHistory({ productId, live, page, onPageChange, myUserId }: Bi
               </tr>
             </thead>
             <tbody>
-              {data.map((bid, index) => {
+              {data.items.map((bid, index) => {
                 const leading = page === 1 && index === 0
                 const mine = myUserId !== null && bid.user_id === myUserId
                 return (

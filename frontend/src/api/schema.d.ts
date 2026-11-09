@@ -4,41 +4,6 @@
  */
 
 export interface paths {
-    "/bids/{product_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Bids For Product */
-        get: operations["get_bids_for_product_bids__product_id__get"];
-        put?: never;
-        /** Create Bid */
-        post: operations["create_bid_bids__product_id__post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/bids/{product_id}/approve": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Approve Bid */
-        post: operations["approve_bid_bids__product_id__approve_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/admin/dashboard": {
         parameters: {
             query?: never;
@@ -288,6 +253,41 @@ export interface paths {
         put?: never;
         /** Verify Token */
         post: operations["verify_token_auth_verify_token_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bids/{product_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Bids For Product */
+        get: operations["get_bids_for_product_bids__product_id__get"];
+        put?: never;
+        /** Create Bid */
+        post: operations["create_bid_bids__product_id__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bids/{product_id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Approve Bid */
+        post: operations["approve_bid_bids__product_id__approve_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -565,6 +565,27 @@ export interface components {
             /** Refresh Token */
             refresh_token: string;
         };
+        /** Page[BidShow] */
+        Page_BidShow_: {
+            /** Items */
+            items: components["schemas"]["BidShow"][];
+            /** Total */
+            total: number;
+        };
+        /** Page[ProductShow] */
+        Page_ProductShow_: {
+            /** Items */
+            items: components["schemas"]["ProductShow"][];
+            /** Total */
+            total: number;
+        };
+        /** Page[ProductStatusRequestShow] */
+        Page_ProductStatusRequestShow_: {
+            /** Items */
+            items: components["schemas"]["ProductStatusRequestShow"][];
+            /** Total */
+            total: number;
+        };
         /** ProductApprovalShow */
         ProductApprovalShow: {
             /** Id */
@@ -726,108 +747,6 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    get_bids_for_product_bids__product_id__get: {
-        parameters: {
-            query?: {
-                page?: number;
-                limit?: number;
-            };
-            header?: never;
-            path: {
-                product_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BidShow"][];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    create_bid_bids__product_id__post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                product_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["BidCreate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BidShow"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    approve_bid_bids__product_id__approve_post: {
-        parameters: {
-            query: {
-                request: components["schemas"]["ApproveBidding"];
-            };
-            header?: never;
-            path: {
-                product_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProductApprovalShow"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     admin_dashboard_admin_dashboard_get: {
         parameters: {
             query?: never;
@@ -850,7 +769,10 @@ export interface operations {
     };
     admin_get_products_by_status_admin_products_status__stat__get: {
         parameters: {
-            query?: never;
+            query?: {
+                limit?: number;
+                page?: number;
+            };
             header?: never;
             path: {
                 stat: components["schemas"]["ProductStatus"];
@@ -865,7 +787,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ProductShow"][];
+                    "application/json": components["schemas"]["Page_ProductShow_"];
                 };
             };
             /** @description Validation Error */
@@ -881,7 +803,10 @@ export interface operations {
     };
     get_pending_status_request_admin_status_request_pending_get: {
         parameters: {
-            query?: never;
+            query?: {
+                limit?: number;
+                page?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -894,7 +819,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ProductStatusRequestShow"][];
+                    "application/json": components["schemas"]["Page_ProductStatusRequestShow_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -1277,6 +1211,108 @@ export interface operations {
             };
         };
     };
+    get_bids_for_product_bids__product_id__get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                page?: number;
+            };
+            header?: never;
+            path: {
+                product_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_BidShow_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_bid_bids__product_id__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                product_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BidCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BidShow"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    approve_bid_bids__product_id__approve_post: {
+        parameters: {
+            query: {
+                request: components["schemas"]["ApproveBidding"];
+            };
+            header?: never;
+            path: {
+                product_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductApprovalShow"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     create_user_users__post: {
         parameters: {
             query?: never;
@@ -1447,7 +1483,10 @@ export interface operations {
     };
     get_my_products_products_my_get: {
         parameters: {
-            query?: never;
+            query?: {
+                limit?: number;
+                page?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -1460,14 +1499,26 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ProductShow"][];
+                    "application/json": components["schemas"]["Page_ProductShow_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
     };
     get_products_products_status__stat__get: {
         parameters: {
-            query?: never;
+            query?: {
+                limit?: number;
+                page?: number;
+            };
             header?: never;
             path: {
                 stat: components["schemas"]["ProductStatus"];
@@ -1482,7 +1533,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ProductShow"][];
+                    "application/json": components["schemas"]["Page_ProductShow_"];
                 };
             };
             /** @description Validation Error */

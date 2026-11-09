@@ -1,9 +1,10 @@
-import { apiRequest, isApiError } from "./client";
+import { apiRequest } from "./client";
 import type {
   AdminDashboard,
   Bid,
   BidDecision,
   CsvImportResult,
+  Page,
   Product,
   ProductApproval,
   ProductCreate,
@@ -17,15 +18,8 @@ import type {
 } from "./types";
 import { isPrivateStatus } from "./types";
 
-/** Some list endpoints answer 404 instead of an empty array when nothing matches. */
-async function emptyOn404<T>(promise: Promise<T[]>): Promise<T[]> {
-  try {
-    return await promise;
-  } catch (error) {
-    if (isApiError(error, 404)) return [];
-    throw error;
-  }
-}
+/** Rows per page; the API accepts 1-20. */
+export const PAGE_SIZE = 20;
 
 export const authApi = {
   login(username: string, password: string) {
@@ -79,6 +73,9 @@ export const usersApi = {
   register(data: UserCreate) {
     return apiRequest<User>("/users/", { method: "POST", json: data });
   },
+  me() {
+    return apiRequest<User>("/users/me", { auth: true });
+  },
   get(id: number) {
     return apiRequest<User>(`/users/${id}`, { auth: true });
   },
@@ -97,15 +94,17 @@ export const usersApi = {
 };
 
 export const productsApi = {
-  listByStatus(status: ProductStatus) {
-    return emptyOn404(
-      apiRequest<Product[]>(`/products/status/${status}`, {
-        auth: isPrivateStatus(status),
-      }),
-    );
+  listByStatus(status: ProductStatus, page = 1, limit = PAGE_SIZE) {
+    return apiRequest<Page<Product>>(`/products/status/${status}`, {
+      auth: isPrivateStatus(status),
+      query: { page, limit },
+    });
   },
-  mine() {
-    return emptyOn404(apiRequest<Product[]>("/products/my", { auth: true }));
+  mine(page = 1, limit = PAGE_SIZE) {
+    return apiRequest<Page<Product>>("/products/my", {
+      auth: true,
+      query: { page, limit },
+    });
   },
   get(id: number) {
     // Optional auth: owners (and admins) can open their private draft/rejected products.
@@ -154,7 +153,7 @@ export const BIDS_PAGE_SIZE = 10;
 export const bidsApi = {
   list(productId: number, page: number, limit = BIDS_PAGE_SIZE) {
     // Optional auth: owners (and admins) can see bids on their private products.
-    return apiRequest<Bid[]>(`/bids/${productId}`, {
+    return apiRequest<Page<Bid>>(`/bids/${productId}`, {
       auth: "optional",
       query: { page, limit },
     });
@@ -179,14 +178,16 @@ export const adminApi = {
   dashboard() {
     return apiRequest<AdminDashboard>("/admin/dashboard", { auth: true });
   },
-  productsByStatus(status: ProductStatus) {
-    return apiRequest<Product[]>(`/admin/products/status/${status}`, {
+  productsByStatus(status: ProductStatus, page = 1, limit = PAGE_SIZE) {
+    return apiRequest<Page<Product>>(`/admin/products/status/${status}`, {
       auth: true,
+      query: { page, limit },
     });
   },
-  pendingRequests() {
-    return apiRequest<StatusRequest[]>("/admin/status-request/pending", {
+  pendingRequests(page = 1, limit = PAGE_SIZE) {
+    return apiRequest<Page<StatusRequest>>("/admin/status-request/pending", {
       auth: true,
+      query: { page, limit },
     });
   },
   approveRequest(id: number) {

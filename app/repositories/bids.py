@@ -13,15 +13,18 @@ class BidRepository:
         self.db.flush()
         return bid
 
-    def get_bids_for_product(self, product_id: int, page: int, limit: int):
-        return (
+    def get_bids_for_product(self, product_id: int, offset: int, limit: int):
+        query = (
             self.db.query(models.Bids)
             .filter(models.Bids.product_id == product_id)
             .order_by(models.Bids.id.desc())
-            .offset((page - 1) * limit)
-            .limit(limit)
-            .all()
         )
+        total = query.count()
+        if offset:
+            query = query.offset(offset)
+        if limit:
+            query = query.limit(limit)
+        return query.all(), total
 
     def get_highest_by_product(self, product_id: int):
         return (

@@ -14,6 +14,12 @@ export type User = Schemas['UserShow']
 export type UserCreate = Schemas['UserCreate']
 export type Token = Schemas['Token']
 
+/** A page of a list endpoint: the rows on this page and the total across all pages. */
+export interface Page<T> {
+  items: T[]
+  total: number
+}
+
 /** Role names seeded by the backend (app/seeders/seeds.py). */
 export type Role = 'user' | 'admin' | 'superadmin'
 

@@ -57,10 +57,11 @@ export function AdminOverview({
   onNavigate: (tab: string) => void;
 }) {
   const dashboard = useAdminDashboard();
-  const pending = usePendingRequests();
-  const live = useAdminProductsByStatus("active");
-  const drafts = useAdminProductsByStatus("draft");
-  const closed = useAdminProductsByStatus("closed");
+  // limit=1: only the totals are needed for the tiles
+  const pending = usePendingRequests(1, 1);
+  const live = useAdminProductsByStatus("active", 1, 1);
+  const drafts = useAdminProductsByStatus("draft", 1, 1);
+  const closed = useAdminProductsByStatus("closed", 1, 1);
 
   if (dashboard.isError)
     return (
@@ -95,7 +96,7 @@ export function AdminOverview({
         <Stat
           icon={ClipboardList}
           label="Pending requests"
-          value={pending.data?.length}
+          value={pending.data?.total}
           failed={pending.isError}
           hint="Go-live requests awaiting review"
           onClick={() => onNavigate("requests")}
@@ -103,7 +104,7 @@ export function AdminOverview({
         <Stat
           icon={Gavel}
           label="Live auctions"
-          value={live.data?.length}
+          value={live.data?.total}
           failed={live.isError}
           hint="Currently accepting bids"
           onClick={() => onNavigate("auctions")}
@@ -111,7 +112,7 @@ export function AdminOverview({
         <Stat
           icon={PencilRuler}
           label="Drafts"
-          value={drafts.data?.length}
+          value={drafts.data?.total}
           failed={drafts.isError}
           hint="Not yet live"
           onClick={() => onNavigate("auctions")}
@@ -119,7 +120,7 @@ export function AdminOverview({
         <Stat
           icon={Hourglass}
           label="Ended"
-          value={closed.data?.length}
+          value={closed.data?.total}
           failed={closed.isError}
           hint="Awaiting the seller’s decision"
           onClick={() => onNavigate("auctions")}

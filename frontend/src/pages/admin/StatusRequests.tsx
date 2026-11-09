@@ -3,23 +3,25 @@ import { Check, Inbox, X } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { toast } from 'sonner'
-import { productsApi } from '@/api/endpoints'
+import { PAGE_SIZE, productsApi } from '@/api/endpoints'
 import { queryKeys, usePendingRequests, useReviewRequest } from '@/api/queries'
 import type { StatusRequest } from '@/api/types'
 import { StatusBadge } from '@/components/product/StatusBadge'
 import { Button } from '@/components/ui/Button'
 import { Card, CardHeader } from '@/components/ui/Card'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
+import { Pager } from '@/components/ui/Pager'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { EmptyState, ErrorState } from '@/components/ui/States'
 import { formatDateTime, formatRelative } from '@/lib/format'
 
 export function StatusRequests() {
-  const { data, isPending, isError, error, refetch } = usePendingRequests()
+  const [page, setPage] = useState(1)
+  const { data, isPending, isError, error, refetch, isPlaceholderData } = usePendingRequests(page)
   const review = useReviewRequest()
   const [pendingAction, setPendingAction] = useState<{ request: StatusRequest; approve: boolean } | null>(null)
 
-  const productIds = [...new Set((data ?? []).map((r) => r.product_id))]
+  const productIds = [...new Set((data?.items ?? []).map((r) => r.product_id))]
   const products = useQueries({
     queries: productIds.map((id) => ({ queryKey: queryKeys.product(id), queryFn: () => productsApi.get(id) })),
   })
@@ -51,13 +53,13 @@ export function StatusRequests() {
         <div className="p-5">
           <ErrorState error={error} onRetry={() => refetch()} />
         </div>
-      ) : data.length === 0 ? (
+      ) : data.items.length === 0 && page === 1 ? (
         <div className="p-5">
           <EmptyState icon={Inbox} title="All caught up" description="There are no pending requests." className="border-0" />
         </div>
       ) : (
         <ul className="divide-y divide-stone-100">
-          {data.map((request) => (
+          {data.items.map((request) => (
             <li key={request.id} className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:px-6">
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-stone-900">
@@ -83,6 +85,11 @@ export function StatusRequests() {
             </li>
           ))}
         </ul>
+      )}
+      {data && (
+        <div className="border-t border-stone-100 px-5 py-3 sm:px-6">
+          <Pager page={page} total={data.total} pageSize={PAGE_SIZE} busy={isPlaceholderData} onPageChange={setPage} />
+        </div>
       )}
       <ConfirmDialog
         open={pendingAction !== null}

@@ -20,7 +20,8 @@ export function AdminPage() {
   const [params, setParams] = useSearchParams()
   const tabParam = params.get('tab')
   const tab: TabId = TABS.some((t) => t.id === tabParam) ? (tabParam as TabId) : 'overview'
-  const pending = usePendingRequests()
+  // limit=1: only the total is needed for the badge
+  const pending = usePendingRequests(1, 1)
   const go = (id: string) => setParams(id === 'overview' ? {} : { tab: id })
 
   return (
@@ -40,8 +41,8 @@ export function AdminPage() {
             )}
           >
             {t.label}
-            {t.id === 'requests' && pending.data && pending.data.length > 0 && (
-              <span className="rounded-full bg-amber-100 px-1.5 text-xs font-semibold text-amber-800 tabular">{pending.data.length}</span>
+            {t.id === 'requests' && pending.data && pending.data.total > 0 && (
+              <span className="rounded-full bg-amber-100 px-1.5 text-xs font-semibold text-amber-800 tabular">{pending.data.total}</span>
             )}
           </button>
         ))}
