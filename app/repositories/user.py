@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 
 from sqlalchemy import or_
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app import models
 
@@ -22,7 +22,14 @@ class UserRepository:
         return self._query().filter(models.User.id == user_id).first()
 
     def get_by_username(self, username: str):
-        return self._query().filter(models.User.username == username).first()
+        return (
+            self._query()
+            .options(
+                selectinload(models.User.roles).selectinload(models.Role.permissions)
+            )
+            .filter(models.User.username == username)
+            .first()
+        )
 
     def get_by_email(self, email: str):
         return self._query().filter(models.User.email == email).first()
