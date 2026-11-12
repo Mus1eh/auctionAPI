@@ -1,9 +1,10 @@
-from sqlalchemy import Column, ForeignKey, Integer, String
+from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
 from app.core.limits import EMAIL_MAX, USERNAME_MAX
 from app.models.mixin import SoftDeleteMixin
+from app.models.user_role import user_roles
 
 
 class User(SoftDeleteMixin, Base):
@@ -18,6 +19,10 @@ class User(SoftDeleteMixin, Base):
         "Product", back_populates="owner", cascade="all, delete-orphan"
     )
 
-    role = relationship("Role", back_populates="users")
-    role_name = Column(String(50), ForeignKey("roles.name"))
+    roles = relationship(
+        "Role",
+        secondary=user_roles,
+        back_populates="users",
+    )
+
     bids = relationship("Bids", back_populates="bidder", cascade="all, delete-orphan")

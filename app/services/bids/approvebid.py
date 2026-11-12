@@ -7,7 +7,7 @@ from app.core.exceptions import (
     NotFoundError,
     ProductNotFoundError,
 )
-from app.core.policies import is_superadmin
+from app.core.policies import has_permission
 from app.enums import ApproveBidding, ProductStatus
 from app.mailer.templates import bid_approved_email, bid_rejected_email
 from app.repositories.bids import BidRepository
@@ -32,7 +32,9 @@ def approve_bid(
         if not product:
             raise ProductNotFoundError()
 
-        if product.owner_id != current_user.id and not is_superadmin(current_user):
+        if product.owner_id != current_user.id and not has_permission(
+            current_user, "bid.approve_any"
+        ):
             raise ForbiddenError(
                 "Only the owner or a superadmin can approve or reject bids"
             )

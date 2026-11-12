@@ -13,7 +13,7 @@ from app.dependencies import (
 )
 from app.enums import ProductStatus
 from app.oauth2 import get_current_user
-from app.permissions import require_role
+from app.permissions import require_permission
 from app.repositories.bids import BidRepository
 from app.repositories.email_outbox import EmailOutboxRepository
 from app.repositories.product import ProductRepository
@@ -36,20 +36,23 @@ from app.services.admin.get import (
 from app.services.admin.reject_status_request import (
     reject_status_request as reject_status_request_service,
 )
+from app.services.admin.remove_role import remove_user_role as remove_user_role_service
 
 router = APIRouter(
     prefix="/admin",
     tags=["Admin"],
-    dependencies=[Depends(require_role(["admin", "superadmin"]))],
+    dependencies=[Depends(require_permission("admin.access"))],
 )
 
 
 @router.get("/dashboard")
-def admin_dashboard(current_user: models.User = Depends(get_current_user)):
+def admin_dashboard(
+    current_user: models.User = Depends(get_current_user),
+):
     return {
         "message": "Welcome to the admin dashboard!",
         "username": current_user.username,
-        "role": current_user.role_name,
+        "roles": [role.name for role in current_user.roles],
     }
 
 
@@ -163,7 +166,6 @@ def admin_change_product_status(
 @router.patch(
     "/users/{user_id}/role",
     response_model=schemas.UserShow,
-    dependencies=[Depends(require_role(["superadmin"]))],
 )
 def change_user_role(
     user_id: int,
@@ -176,6 +178,26 @@ def change_user_role(
         user_id=user_id,
         request=request,
         db=db,
+        current_user=current_user,
+        user_repo=user_repo,
+    )
+
+
+@router.delete(
+    "/users/{user_id}/role/{role_name}",
+    response_model=schemas.UserShow,
+)
+def remove_user_role(
+    user_id: int,
+    role_name: str,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+    user_repo: UserRepository = Depends(get_user_repo),
+):
+    return remove_user_role_service(
+        db=db,
+        user_id=user_id,
+        role_name=role_name,
         current_user=current_user,
         user_repo=user_repo,
     )

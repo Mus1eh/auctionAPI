@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 
 from app import models
 from app.core.exceptions import ConflictError, ProductNotFoundError
-from app.core.policies import require_product_owner_or_admin
+from app.core.policies import require_product_owner_or_permission
 from app.enums import ProductStatus
 from app.repositories.product import ProductRepository
 from app.repositories.product_status_request import ProductStatusRequestRepository
@@ -27,7 +27,9 @@ def delete_product(
     if not product:
         raise ProductNotFoundError()
 
-    require_product_owner_or_admin(product, current_user)
+    require_product_owner_or_permission(
+        product, current_user, "product.delete_any"
+    )
 
     if product.status not in DELETABLE_STATUSES:
         raise ConflictError("Product cannot be deleted in its current status.")

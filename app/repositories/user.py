@@ -35,8 +35,18 @@ class UserRepository:
     def get_role_by_name(self, role_name: str):
         return self.db.query(models.Role).filter(models.Role.name == role_name).first()
 
-    def update_role(self, user: models.User, role: models.Role):
-        user.role_name = role.name
+    def has_role(self, user: models.User, role_name: str) -> bool:
+        return any(role.name == role_name for role in user.roles)
+
+    def assign_role(self, user: models.User, role: models.Role):
+        if not self.has_role(user, role.name):
+            user.roles.append(role)
+        self.db.flush()
+        return user
+
+    def remove_role(self, user: models.User, role: models.Role):
+        if self.has_role(user, role.name):
+            user.roles.remove(role)
         self.db.flush()
         return user
 

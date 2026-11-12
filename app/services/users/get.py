@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 
 from app import models
 from app.core.exceptions import ForbiddenError, UserNotFoundError
-from app.core.policies import is_admin
+from app.core.policies import has_permission
 from app.repositories.user import UserRepository
 
 
@@ -14,7 +14,7 @@ def get_user_by_id(
     if not user:
         raise UserNotFoundError()
 
-    if not is_admin(current_user) and current_user.id != user.id:
+    if not has_permission(current_user, "user.view_any") and current_user.id != user.id:
         raise ForbiddenError("You cannot access this user's profile.")
 
     return user
