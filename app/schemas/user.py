@@ -33,3 +33,16 @@ class UserShow(BaseModel):
     email: EmailStr
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class UserDetail(UserShow):
+    roles: list[str]
+
+    @field_validator("roles", mode="before")
+    @classmethod
+    def role_names(cls, value):
+        return sorted(getattr(role, "name", role) for role in value)
+
+
+class UserMe(UserDetail):
+    permissions: list[str]

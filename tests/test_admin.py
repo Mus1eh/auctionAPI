@@ -9,7 +9,7 @@ def test_admin_dashboard_permissions(client, make_user, auth):
         user = make_user(role)
         response = client.get("/admin/dashboard", headers=auth(user))
         assert response.status_code == 200, response.text
-        assert response.json()["role"] == role
+        assert role in response.json()["roles"]
 
 
 def test_admin_requires_auth(client):
@@ -169,7 +169,7 @@ def test_superadmin_changes_role(client, db_session, make_user, auth):
 
     updated_user = db_session.get(models.User, target.id)
 
-    assert updated_user.role_name == "admin"
+    assert "admin" in {role.name for role in updated_user.roles}
 
 
 def test_superadmin_role_validation(client, make_user, auth):

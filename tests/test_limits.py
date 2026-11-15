@@ -6,6 +6,7 @@ import pytest
 from app import models, schemas
 from app.core import limits
 from app.enums import ProductStatus
+from app.worker import tasks
 
 NAME = limits.PRODUCT_NAME_MAX
 DESCRIPTION = limits.PRODUCT_DESCRIPTION_MAX
@@ -90,12 +91,12 @@ def test_an_empty_product_name_is_refused(client, make_user, auth):
 # --- csv import ---------------------------------------------------------------
 
 
-def import_csv(client, headers, row: str):
-    content = f"name,description,start_price\n{row}\n".encode()
-    return client.post(
-        "/products/import-csv",
-        files={"file": ("products.csv", content, "text/csv")},
-        headers=headers,
+def import_csv(db_session, task_sessions, row: str):
+    owner = models.User(username="csv_owner", email="csv@example.com", password="x")
+    db_session.add(owner)
+    db_session.flush()
+    return tasks.import_products_csv_task(
+        f"name,description,start_price\n{row}\n", owner.id
     )
 
 
@@ -107,16 +108,19 @@ def import_csv(client, headers, row: str):
         f"A,d,{INT_MAX + 1}",
     ],
 )
-def test_csv_rows_over_the_limit_are_refused(client, make_user, auth, row):
-    assert refused(import_csv(client, auth(make_user()), row))
+def test_csv_rows_over_the_limit_are_refused(db_session, task_sessions, row):
+    result = import_csv(db_session, task_sessions, row)
+
+    assert result["status"] == "failed"
+    assert result["detail"]["errors"][0]["row"] == 2
 
 
 @pytest.mark.parametrize(
     "row",
     [f"A,{'d' * DESCRIPTION},5", f"{'a' * NAME},d,5", f"A,d,{INT_MAX}"],
 )
-def test_csv_rows_at_the_limit_are_imported(client, make_user, auth, row):
-    assert import_csv(client, auth(make_user()), row).status_code == 201
+def test_csv_rows_at_the_limit_are_imported(db_session, task_sessions, row):
+    assert import_csv(db_session, task_sessions, row)["status"] == "success"
 
 
 # --- bids ----------------------------------------------------------------------

@@ -19,7 +19,12 @@ class UserRepository:
         return query
 
     def get_by_id(self, user_id: int):
-        return self._query().filter(models.User.id == user_id).first()
+        return (
+            self._query()
+            .options(selectinload(models.User.roles))
+            .filter(models.User.id == user_id)
+            .first()
+        )
 
     def get_by_username(self, username: str):
         return (

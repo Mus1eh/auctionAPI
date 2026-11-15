@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app import models, schemas
 from app.core.exceptions import (
     BadRequestError,
+    PayloadTooLargeError,
     UnprocessableError,
 )
 from app.enums import ProductStatus
@@ -21,8 +22,8 @@ def validate_csv_upload(file: BinaryIO, filename: str):
         raise BadRequestError("Only csv files can be imported.")
     content = file.read(MAX_CSV_BYTES + 1)
 
-    # if len(content) > MAX_CSV_BYTES:
-    #     raise PayloadTooLargeError("CSV file exceeds the 2 MB size limit.")
+    if len(content) > MAX_CSV_BYTES:
+        raise PayloadTooLargeError("CSV file exceeds the 2 MB size limit.")
 
     try:
         return content.decode("utf-8")

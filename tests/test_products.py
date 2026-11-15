@@ -92,9 +92,9 @@ def test_private_status_returns_only_own_products(
     assert response.status_code == 200, response.text
     assert [row["id"] for row in response.json()["items"]] == [own.id]
 
-    # ADMINS ONLY SEE THEIR OWN HERE TOO, EVERYONE'S IS IN THE ADMIN DASHBOARD
+    # product.view_all (ADMINS) SEES EVERYONE'S PRIVATE PRODUCTS
     response = client.get("/products/status/rejected", headers=auth(admin))
-    assert own.id not in [row["id"] for row in response.json()["items"]]
+    assert own.id in [row["id"] for row in response.json()["items"]]
 
 
 def test_private_status_empty_message(client, make_user, auth):
@@ -247,7 +247,8 @@ def test_cannot_request_close(client, make_user, make_product, auth):
 
 def test_my_products_pagination(client, make_user, make_product, auth):
     owner = make_user()
-    ids = sorted(make_product(owner).id for _ in range(3))
+    # NEWEST FIRST
+    ids = sorted((make_product(owner).id for _ in range(3)), reverse=True)
 
     first = client.get("/products/my?limit=2&page=1", headers=auth(owner)).json()
     assert [row["id"] for row in first["items"]] == ids[:2]

@@ -39,8 +39,8 @@ def test_two_simultaneous_identical_bids(schema):
                 username=f"con_{index}_{unique}",
                 email=f"con_{index}_{unique}@example.com",
                 password=Hash.crypt_password("TestPassword123!"),
-                role_name="user",
             )
+            user.roles.append(db.query(models.Role).filter_by(name="user").one())
             db.add(user)
             db.flush()
             user_ids.append(user.id)

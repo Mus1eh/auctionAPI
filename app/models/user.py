@@ -25,4 +25,11 @@ class User(SoftDeleteMixin, Base):
         back_populates="users",
     )
 
+    @property
+    def permissions(self) -> list[str]:
+        """Names of every permission granted by any of the user's roles."""
+        return sorted(
+            {permission.name for role in self.roles for permission in role.permissions}
+        )
+
     bids = relationship("Bids", back_populates="bidder", cascade="all, delete-orphan")

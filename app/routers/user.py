@@ -59,14 +59,14 @@ def delete_my_account(
     )
 
 
-@router.get("/me", response_model=schemas.UserShow)
+@router.get("/me", response_model=schemas.UserMe)
 def get_my_account(
     current_user: models.User = Depends(get_current_user),
 ):
     return current_user
 
 
-@router.get("/{id}", response_model=schemas.UserShow)
+@router.get("/{id}", response_model=schemas.UserDetail)
 def get_user(
     id: int,
     db: Session = Depends(get_db),

@@ -4,6 +4,7 @@ from app import models
 from app.core.config import SeedSettings
 from app.core.database import sessionLocal
 from app.core.security import Hash
+from app.seeders.rbac import PERMISSIONS, ROLE_PERMISSIONS, ROLES
 
 seed_settings = SeedSettings()
 
@@ -20,7 +21,7 @@ def seed_database():
     db = sessionLocal()
 
     try:
-        role_names = ["superadmin", "admin", "user"]
+        role_names = ROLES
 
         for role_name in role_names:
             role = db.query(models.Role).filter(models.Role.name == role_name).first()
@@ -30,22 +31,7 @@ def seed_database():
 
         db.flush()
 
-        permissions_definitions = {
-            "admin.access": "Access admin endpoints",
-            "user.role.assign": "Assign roles to users",
-            "user.role.remove": "Remove roles from users",
-            "product.status_request.view": "View pending product status requests",
-            "product.status_request.approve": "Approve product status requests",
-            "product.status_request.reject": "Reject product status requests",
-            "product.status.change": "Change a product's status directly",
-            "product.view_all": "View products of any status from all users",
-            "product.update_any": "Update any user's product",
-            "product.delete_any": "Delete any user's product",
-            "user.view_any": "View any user's profile",
-            "user.delete": "Delete regular users",
-            "user.delete_admin": "Delete admin users",
-            "bid.approve_any": "Approve bids on products owned by others",
-        }
+        permissions_definitions = PERMISSIONS
 
         for permission_name in permissions_definitions:
             permission = (
@@ -58,24 +44,7 @@ def seed_database():
 
         db.flush()
 
-        role_permission_map = {
-            "admin": [
-                "admin.access",
-                "product.status_request.view",
-                "product.status_request.approve",
-                "product.status_request.reject",
-                "product.status.change",
-                "product.view_all",
-                "product.update_any",
-                "product.delete_any",
-                "user.view_any",
-                "user.delete",
-            ],
-            # require_permission bypasses superadmin, but keep the full list so
-            # the DB stays accurate if the bypass is ever removed.
-            "superadmin": list(permissions_definitions),
-            "user": [],
-        }
+        role_permission_map = ROLE_PERMISSIONS
 
         for role_name, permission_names in role_permission_map.items():
             role = db.query(models.Role).filter(models.Role.name == role_name).first()

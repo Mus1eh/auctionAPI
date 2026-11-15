@@ -4,25 +4,10 @@ test connection. Everything is rolled back with the test's transaction."""
 from datetime import UTC, datetime, timedelta
 
 import pytest
-from sqlalchemy.orm import Session
 
 from app import models
 from app.enums import ProductStatus
 from app.worker import tasks
-
-
-@pytest.fixture
-def task_sessions(db_session, monkeypatch):
-    connection = db_session.connection()
-
-    def factory():
-        return Session(
-            bind=connection,
-            join_transaction_mode="create_savepoint",
-            autoflush=False,
-        )
-
-    monkeypatch.setattr(tasks, "sessionLocal", factory)
 
 
 @pytest.fixture

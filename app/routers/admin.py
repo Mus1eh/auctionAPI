@@ -165,7 +165,8 @@ def admin_change_product_status(
 
 @router.patch(
     "/users/{user_id}/role",
-    response_model=schemas.UserShow,
+    response_model=schemas.UserDetail,
+    dependencies=[Depends(require_permission("user.role.assign"))],
 )
 def change_user_role(
     user_id: int,
@@ -185,7 +186,8 @@ def change_user_role(
 
 @router.delete(
     "/users/{user_id}/role/{role_name}",
-    response_model=schemas.UserShow,
+    response_model=schemas.UserDetail,
+    dependencies=[Depends(require_permission("user.role.remove"))],
 )
 def remove_user_role(
     user_id: int,
