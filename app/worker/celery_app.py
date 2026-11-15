@@ -19,3 +19,4 @@ celery_app.conf.beat_schedule = {
 }
 
 celery_app.conf.timezone = "UTC"
+celery_app.conf.result_expires = 3600  # 1 hour

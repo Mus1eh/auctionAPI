@@ -48,7 +48,7 @@ class ProductRepository:
         query = (
             self._query(include_deleted)
             .filter(models.Product.owner_id == owner_id)
-            .order_by(models.Product.id.asc())
+            .order_by(models.Product.id.desc())
         )
         total = query.count()
         if offset:

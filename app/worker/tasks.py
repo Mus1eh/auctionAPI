@@ -1,16 +1,16 @@
 from datetime import UTC, datetime
 
 from app.core.database import sessionLocal
+from app.core.exceptions import AppError
 from app.mailer.service import send_auction_email
 from app.repositories.bids import BidRepository
 from app.repositories.email_outbox import EmailOutboxRepository
 from app.repositories.product import ProductRepository
 from app.services.auctions.close import close_auction
+from app.services.products.csv import import_products_from_text
 from app.worker.celery_app import celery_app
 
 
-# Task names keep their original "app.tasks." prefix so tasks already queued or
-# scheduled keep working after the module moved.
 @celery_app.task(name="app.tasks.close_expired_auctions")
 def close_expired_auctions():
     db = sessionLocal()
@@ -95,3 +95,22 @@ def process_email_outbox():
         "sent": sent_count,
         "failed": failed_count,
     }
+
+
+@celery_app.task(name="app.tasks.import_products_csv")
+def import_products_csv_task(text: str, owner_id: int):
+    db = sessionLocal()
+    try:
+        result = import_products_from_text(
+            db=db,
+            text=text,
+            repo=ProductRepository(db),
+            owner_id=owner_id,
+        )
+
+        return {"status": "success", **result}
+
+    except AppError as exc:
+        return {"status": "failed", "detail": exc.detail}
+    finally:
+        db.close()
