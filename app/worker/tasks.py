@@ -41,22 +41,6 @@ def close_expired_auctions():
         db.close()
 
 
-@celery_app.task(
-    name="app.tasks.send_auction_notification",
-    bind=True,
-    autoretry_for=(Exception,),
-    retry_backoff=True,
-    retry_kwargs={"max_retries": 5},
-)
-def send_auction_notification(self, to_email: str, subject: str, body: str):
-    send_auction_email(to_email=to_email, subject=subject, body=body)
-
-    return {
-        "status": "sent",
-        "recipient": to_email,
-    }
-
-
 @celery_app.task(name="app.tasks.process_email_outbox")
 def process_email_outbox():
 
@@ -78,7 +62,7 @@ def process_email_outbox():
                 )
 
             except Exception as exc:  # NOQA
-                outbox_repo.mark_failed(email)
+                outbox_repo.mark_failed(email, str(exc))
                 db.commit()
                 failed_count += 1
                 print(f"Failed to send email #{email.id}: {exc}")

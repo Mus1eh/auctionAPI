@@ -1,8 +1,12 @@
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app import models
+
+MAX_EMAIL_ATTEMPTS = 5
+RETRY_BASE_SECONDS = 60
 
 
 class EmailOutboxRepository:
@@ -25,6 +29,12 @@ class EmailOutboxRepository:
         return (
             self.db.query(models.EmailOutbox)
             .filter(models.EmailOutbox.status == "pending")
+            .filter(
+                or_(
+                    models.EmailOutbox.next_attempt_at.is_(None),
+                    models.EmailOutbox.next_attempt_at <= datetime.now(UTC),
+                )
+            )
             .order_by(models.EmailOutbox.id)
             .with_for_update(skip_locked=True)
             .first()
@@ -36,7 +46,17 @@ class EmailOutboxRepository:
         self.db.flush()
         return email
 
-    def mark_failed(self, email: models.EmailOutbox):
-        email.status = "failed"
+    def mark_failed(self, email: models.EmailOutbox, error: str):
+        """Schedule a retry with exponential backoff, or give up for good."""
+        email.attempts += 1
+        email.last_error = error[:1000]
+
+        if email.attempts >= MAX_EMAIL_ATTEMPTS:
+            email.status = "failed"
+            email.next_attempt_at = None
+        else:
+            delay = RETRY_BASE_SECONDS * 2 ** (email.attempts - 1)
+            email.next_attempt_at = datetime.now(UTC) + timedelta(seconds=delay)
+
         self.db.flush()
         return email

@@ -12,6 +12,9 @@ class EmailOutbox(Base):
     body = Column(Text, nullable=False)
 
     status = Column(String(20), nullable=False, default="pending")
+    attempts = Column(Integer, nullable=False, default=0, server_default="0")
+    last_error = Column(Text, nullable=True)
+    next_attempt_at = Column(DateTime(timezone=True), nullable=True)
 
     created_at = Column(
         DateTime(timezone=True),

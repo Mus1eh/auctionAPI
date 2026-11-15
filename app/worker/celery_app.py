@@ -1,9 +1,11 @@
 from celery import Celery
 
+from app.core.config import settings
+
 celery_app = Celery(
     "auction",
-    broker="redis://localhost:6379/0",
-    backend="redis://localhost:6379/1",
+    broker=settings.celery_broker_url,
+    backend=settings.celery_result_backend,
     include=["app.worker.tasks"],
 )
 
@@ -19,4 +21,4 @@ celery_app.conf.beat_schedule = {
 }
 
 celery_app.conf.timezone = "UTC"
-celery_app.conf.result_expires = 3600  # 1 hour
+celery_app.conf.result_expires = settings.celery_result_expires

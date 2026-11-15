@@ -226,7 +226,7 @@ def restore_product_to_draft(
     # WHERE approval_status = 'pending'; -----> ALSO WE HAVE THE 409 CONFLICT SO WE GOT 2 LAYERS OF PROTECTION AGAINST MULTIPLE PENDING REQUESTS
 
 
-@router.post("/import-csv", status_code=status.HTTP_201_CREATED)
+@router.post("/import-csv", status_code=status.HTTP_202_ACCEPTED)
 def import_products_csv(
     file: UploadFile = File(...),
     current_user: models.User = Depends(get_current_user),
