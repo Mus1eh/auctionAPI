@@ -151,7 +151,7 @@ function DeleteAccountCard() {
 }
 
 export function AccountPage() {
-  const { username, role } = useAuth()
+  const { username, primaryRole: role } = useAuth()
 
   return (
     <div className="mx-auto max-w-3xl space-y-8">

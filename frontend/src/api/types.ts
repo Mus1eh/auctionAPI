@@ -10,7 +10,10 @@ export type ProductApproval = Schemas['ProductApprovalShow']
 export type StatusRequest = Schemas['ProductStatusRequestShow']
 export type Bid = Schemas['BidShow']
 export type BidDecision = Schemas['ApproveBidding']
-export type User = Schemas['UserShow']
+/** A user as admins see them: with role names. */
+export type User = Schemas['UserDetail']
+/** The signed-in user: role names plus every permission those roles grant. */
+export type Me = Schemas['UserMe']
 export type UserCreate = Schemas['UserCreate']
 export type Token = Schemas['Token']
 
@@ -27,10 +30,29 @@ export type Role = 'user' | 'admin' | 'superadmin'
 export interface AdminDashboard {
   message: string
   username: string
-  role: Role
+  roles: string[]
 }
 
-/** POST /products/import-csv has no response_model; this mirrors app/routers/product.py. */
+/** POST /products/import-csv answers 202 once the file is queued; this mirrors app/routers/product.py. */
+export interface CsvImportQueued {
+  task_id: string
+}
+
+export interface CsvImportFailure {
+  message: string
+  errors: CsvRowError[]
+}
+
+/**
+ * GET /products/import-csv/{task_id}. "failed" means the file was read but is invalid
+ * (nothing was imported); "error" means the worker itself crashed.
+ */
+export type CsvImportStatus =
+  | { status: 'processing' }
+  | { status: 'success'; message: string; imported_count: number }
+  | { status: 'failed'; detail: string | CsvImportFailure }
+  | { status: 'error'; detail: string }
+
 export interface CsvImportResult {
   message: string
   imported_count: number

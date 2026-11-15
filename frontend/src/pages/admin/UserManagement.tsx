@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { isApiError } from '@/api/client'
-import { useChangeUserRole, useDeleteUser, useUser } from '@/api/queries'
+import { useChangeUserRole, useDeleteUser, useRemoveUserRole, useUser } from '@/api/queries'
 import type { User } from '@/api/types'
 import { useAuth } from '@/auth/AuthContext'
 import { Alert } from '@/components/ui/Alert'
@@ -16,39 +16,56 @@ import { Spinner } from '@/components/ui/States'
 import { idSchema } from '@/lib/schemas'
 
 function RoleEditor({ user }: { user: User }) {
+  const { can } = useAuth()
   const changeRole = useChangeUserRole()
+  const removeRole = useRemoveUserRole()
   const [role, setRole] = useState<'user' | 'admin'>('admin')
+  const canAssign = can('user.role.assign')
+  const canRemove = can('user.role.remove')
+
+  const announce = (message: string) => ({ onSuccess: () => toast.success(message), onError: (e: Error) => toast.error(e.message) })
+
   return (
     <div className="space-y-2">
-      <p className="text-sm font-medium text-stone-800">Change role</p>
-      <div className="flex gap-2">
-        <Select aria-label="New role" value={role} onChange={(e) => setRole(e.target.value as 'user' | 'admin')} className="max-w-40">
+      <p className="text-sm font-medium text-stone-800">Roles</p>
+      <ul className="flex flex-wrap gap-1.5" aria-label="Current roles">
+        {user.roles.map((name) => (
+          <li key={name} className="rounded-full bg-stone-100 px-2.5 py-0.5 text-xs font-medium text-stone-700">
+            {name}
+          </li>
+        ))}
+      </ul>
+      <div className="flex flex-wrap gap-2">
+        <Select aria-label="Role" value={role} onChange={(e) => setRole(e.target.value as 'user' | 'admin')} className="max-w-40">
           <option value="user">user</option>
           <option value="admin">admin</option>
         </Select>
-        <Button
-          variant="secondary"
-          loading={changeRole.isPending}
-          onClick={() =>
-            changeRole.mutate(
-              { id: user.id, role },
-              {
-                onSuccess: (u) => toast.success(`${u.username} is now ${role === 'admin' ? 'an admin' : 'a user'}`),
-                onError: (e) => toast.error(e.message),
-              },
-            )
-          }
-        >
-          Apply
-        </Button>
+        {canAssign && (
+          <Button
+            variant="secondary"
+            loading={changeRole.isPending}
+            onClick={() => changeRole.mutate({ id: user.id, role }, announce(`${user.username} was given the ${role} role`))}
+          >
+            Add role
+          </Button>
+        )}
+        {canRemove && (
+          <Button
+            variant="secondary"
+            loading={removeRole.isPending}
+            onClick={() => removeRole.mutate({ id: user.id, role }, announce(`${user.username} no longer has the ${role} role`))}
+          >
+            Remove role
+          </Button>
+        )}
       </div>
-      <p className="text-xs text-stone-500">Only superadmins can change roles. Superadmin accounts can’t be modified.</p>
+      <p className="text-xs text-stone-500">A user can hold several roles but always keeps at least one. Superadmin accounts can’t be modified.</p>
     </div>
   )
 }
 
 function UserCard({ user, onDeleted }: { user: User; onDeleted: () => void }) {
-  const { isSuperadmin } = useAuth()
+  const { can } = useAuth()
   const remove = useDeleteUser()
   const [confirm, setConfirm] = useState(false)
 
@@ -63,7 +80,7 @@ function UserCard({ user, onDeleted }: { user: User; onDeleted: () => void }) {
           </p>
         </div>
       </div>
-      {isSuperadmin && <RoleEditor user={user} />}
+      {(can('user.role.assign') || can('user.role.remove')) && <RoleEditor user={user} />}
       <div className="border-t border-stone-100 pt-5">
         <Button variant="danger-ghost" onClick={() => setConfirm(true)}>
           <Trash2 className="size-4" aria-hidden /> Delete user

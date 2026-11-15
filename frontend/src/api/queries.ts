@@ -4,9 +4,11 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
+import { ApiError } from "./client";
 import { adminApi, bidsApi, PAGE_SIZE, productsApi, usersApi } from "./endpoints";
 import type {
   BidDecision,
+  CsvImportResult,
   ProductCreate,
   ProductPatch,
   ProductStatus,
@@ -204,10 +206,40 @@ export function useRequestGoLive() {
   });
 }
 
+const CSV_POLL_MS = 1000;
+const CSV_POLL_LIMIT = 120;
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Uploads the file, then polls the queued import until it finishes. Resolves with the
+ * result; a rejected file (status "failed") and a crashed worker (status "error") both
+ * reject with an ApiError, the same shape the form already shows.
+ */
+async function importCsvAndWait(file: File): Promise<CsvImportResult> {
+  const { task_id } = await productsApi.importCsv(file);
+  for (let attempt = 0; attempt < CSV_POLL_LIMIT; attempt++) {
+    const result = await productsApi.importCsvStatus(task_id);
+    if (result.status === "success") return result;
+    if (result.status === "failed") {
+      const detail = result.detail;
+      const message = typeof detail === "string" ? detail : detail.message;
+      throw new ApiError(422, message, detail);
+    }
+    if (result.status === "error") throw new ApiError(500, result.detail);
+    await sleep(CSV_POLL_MS);
+  }
+  // Still "processing" (or the result expired): the import may yet finish in the background.
+  throw new ApiError(
+    408,
+    "The import is taking longer than expected. Check your drafts in a few minutes.",
+  );
+}
+
 export function useImportCsv() {
   const invalidate = useInvalidateProducts();
   return useMutation({
-    mutationFn: (file: File) => productsApi.importCsv(file),
+    mutationFn: importCsvAndWait,
     onSuccess: () => invalidate(),
   });
 }
@@ -246,6 +278,21 @@ export function useChangeUserRole() {
       id: number;
       role: Exclude<Role, "superadmin">;
     }) => adminApi.changeUserRole(id, role),
+    onSuccess: (user) =>
+      queryClient.setQueryData(queryKeys.user(user.id), user),
+  });
+}
+
+export function useRemoveUserRole() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      role,
+    }: {
+      id: number;
+      role: Exclude<Role, "superadmin">;
+    }) => adminApi.removeUserRole(id, role),
     onSuccess: (user) =>
       queryClient.setQueryData(queryKeys.user(user.id), user),
   });

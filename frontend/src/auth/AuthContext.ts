@@ -1,12 +1,16 @@
 import { createContext, useContext } from 'react'
-import type { Role } from '@/api/types'
 
 export type AuthStatus = 'loading' | 'authenticated' | 'anonymous'
 
 export interface AuthContextValue {
   status: AuthStatus
   username: string | null
-  role: Role | null
+  roles: string[]
+  /** The most powerful role held, for display. */
+  primaryRole: 'user' | 'admin' | 'superadmin' | null
+  permissions: string[]
+  /** UX only: whether the signed-in user holds a permission. The API enforces it regardless. */
+  can: (permission: string) => boolean
   isAdmin: boolean
   isSuperadmin: boolean
   login: (identifier: string, password: string) => Promise<void>

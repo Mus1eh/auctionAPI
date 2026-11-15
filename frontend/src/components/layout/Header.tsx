@@ -32,7 +32,7 @@ function RoleBadge({ role }: { role: string }) {
 }
 
 function UserMenu() {
-  const { username, role, logout } = useAuth()
+  const { username, primaryRole: role, logout } = useAuth()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -92,7 +92,7 @@ function UserMenu() {
 }
 
 export function Header() {
-  const { status, username, role, logout } = useAuth()
+  const { status, username, primaryRole: role, logout } = useAuth()
   const items = useNavItems()
   const location = useLocation()
   const navigate = useNavigate()

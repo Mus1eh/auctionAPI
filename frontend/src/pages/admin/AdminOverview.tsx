@@ -85,9 +85,9 @@ export function AdminOverview({
               </span>{" "}
               with the{" "}
               <span className="font-medium text-stone-900">
-                {dashboard.data.role}
+                {dashboard.data.roles.join(", ")}
               </span>{" "}
-              role.
+              {dashboard.data.roles.length === 1 ? "role" : "roles"}.
             </p>
           </>
         )}

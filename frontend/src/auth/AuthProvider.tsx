@@ -3,22 +3,22 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react
 import { authApi } from '@/api/endpoints'
 import { PRIVATE_QUERY_ROOTS } from '@/api/queries'
 import { tokenStore } from '@/api/tokens'
-import type { Role } from '@/api/types'
 import { AuthContext, type AuthContextValue, type AuthStatus } from './AuthContext'
 import { loadSessionInfo, restoreSession } from './session'
 
 interface State {
   status: AuthStatus
   username: string | null
-  role: Role | null
+  roles: string[]
+  permissions: string[]
 }
 
-const ANONYMOUS: State = { status: 'anonymous', username: null, role: null }
+const ANONYMOUS: State = { status: 'anonymous', username: null, roles: [], permissions: [] }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient()
   const [state, setState] = useState<State>(() =>
-    tokenStore.getRefreshToken() ? { status: 'loading', username: null, role: null } : ANONYMOUS,
+    tokenStore.getRefreshToken() ? { status: 'loading', username: null, roles: [], permissions: [] } : ANONYMOUS,
   )
 
   const dropPrivateData = useCallback(() => {
@@ -77,8 +77,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value = useMemo<AuthContextValue>(
     () => ({
       ...state,
-      isAdmin: state.role === 'admin' || state.role === 'superadmin',
-      isSuperadmin: state.role === 'superadmin',
+      primaryRole: state.roles.includes('superadmin') ? 'superadmin' : state.roles.includes('admin') ? 'admin' : state.status === 'authenticated' ? 'user' : null,
+      can: (permission: string) => state.permissions.includes(permission),
+      isAdmin: state.permissions.includes('admin.access'),
+      isSuperadmin: state.roles.includes('superadmin'),
       login,
       logout,
       endSession,

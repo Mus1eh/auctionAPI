@@ -29,7 +29,7 @@ function signInAs(role: 'admin' | 'superadmin') {
   tokenStore.setTokens({ access_token: 'x', refresh_token: 'r1' })
   mockFetch({
     'POST /auth/refresh': { access_token: fakeJwt('staff'), refresh_token: 'r2', token_type: 'bearer' },
-    'GET /admin/dashboard': jsonResponse({ message: 'Welcome', username: 'staff', role }),
+    'GET /users/me': jsonResponse({ id: 1, username: 'staff', email: 'staff@example.com', roles: [role], permissions: ['admin.access'] }),
   })
 }
 

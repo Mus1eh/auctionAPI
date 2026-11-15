@@ -7,7 +7,7 @@ import { useAuth } from './AuthContext'
 import { RedirectIfAuthenticated, RequireAdmin, RequireAuth } from './guards'
 
 function WhoAmI() {
-  const { status, username, role } = useAuth()
+  const { status, username, primaryRole: role } = useAuth()
   return <p>{`${status}:${username ?? '-'}:${role ?? '-'}`}</p>
 }
 
@@ -40,11 +40,11 @@ describe('route guards', () => {
     expect(screen.queryByText('admin console')).not.toBeInTheDocument()
   })
 
-  it('lets admins through, with the role from /admin/dashboard', async () => {
+  it('lets admins through, with roles and permissions from /users/me', async () => {
     tokenStore.setTokens({ access_token: 'stale', refresh_token: 'r1' })
     mockFetch({
       'POST /auth/refresh': { access_token: fakeJwt('root'), refresh_token: 'r2', token_type: 'bearer' },
-      'GET /admin/dashboard': { message: 'Welcome', username: 'root', role: 'superadmin' },
+      'GET /users/me': { id: 1, username: 'root', email: 'root@example.com', roles: ['superadmin'], permissions: ['admin.access'] },
     })
     renderApp(<RequireAdmin><WhoAmI /></RequireAdmin>)
     expect(await screen.findByText('authenticated:root:superadmin')).toBeInTheDocument()

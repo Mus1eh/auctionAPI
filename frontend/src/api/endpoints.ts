@@ -3,7 +3,9 @@ import type {
   AdminDashboard,
   Bid,
   BidDecision,
-  CsvImportResult,
+  Me,
+  CsvImportQueued,
+  CsvImportStatus,
   Page,
   Product,
   ProductApproval,
@@ -74,7 +76,7 @@ export const usersApi = {
     return apiRequest<User>("/users/", { method: "POST", json: data });
   },
   me() {
-    return apiRequest<User>("/users/me", { auth: true });
+    return apiRequest<Me>("/users/me", { auth: true });
   },
   get(id: number) {
     return apiRequest<User>(`/users/${id}`, { auth: true });
@@ -140,11 +142,17 @@ export const productsApi = {
   importCsv(file: File) {
     const body = new FormData();
     body.append("file", file);
-    return apiRequest<CsvImportResult>("/products/import-csv", {
+    return apiRequest<CsvImportQueued>("/products/import-csv", {
       method: "POST",
       auth: true,
       body,
     });
+  },
+  importCsvStatus(taskId: string) {
+    return apiRequest<CsvImportStatus>(
+      `/products/import-csv/${encodeURIComponent(taskId)}`,
+      { auth: true },
+    );
   },
 };
 
@@ -216,6 +224,12 @@ export const adminApi = {
       method: "PATCH",
       auth: true,
       json: { role_name: role },
+    });
+  },
+  removeUserRole(userId: number, role: Exclude<Role, "superadmin">) {
+    return apiRequest<User>(`/admin/users/${userId}/role/${role}`, {
+      method: "DELETE",
+      auth: true,
     });
   },
 };

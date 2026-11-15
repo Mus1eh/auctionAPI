@@ -1,28 +1,24 @@
 import { isApiError, refreshSession } from '@/api/client'
-import { adminApi } from '@/api/endpoints'
+import { usersApi } from '@/api/endpoints'
 import { decodeJwt, tokenStore } from '@/api/tokens'
-import type { Role } from '@/api/types'
 
 export interface SessionInfo {
   username: string
-  role: Role
+  roles: string[]
+  permissions: string[]
 }
 
-/**
- * The API has no "current user" endpoint. The username comes from the JWT `sub`
- * claim and the role from probing /admin/dashboard (200 → admin/superadmin, 403 → user).
- */
+/** Who is signed in, the roles they hold and every permission those roles grant (GET /users/me). */
 export async function loadSessionInfo(): Promise<SessionInfo> {
   const token = tokenStore.getAccessToken()
   const username = (token && decodeJwt(token)?.sub) || ''
   try {
-    const dashboard = await adminApi.dashboard()
-    return { username: dashboard.username || username, role: dashboard.role }
+    const me = await usersApi.me()
+    return { username: me.username || username, roles: me.roles, permissions: me.permissions }
   } catch (error) {
     if (isApiError(error, 401)) throw error
-    // 403 is the expected answer for regular users. Any other failure falls back to the
-    // least-privileged role; the backend still enforces permissions either way.
-    return { username, role: 'user' }
+    // Any other failure falls back to no permissions; the backend still enforces them either way.
+    return { username, roles: [], permissions: [] }
   }
 }
 
