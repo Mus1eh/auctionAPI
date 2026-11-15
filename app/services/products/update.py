@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 
 from app import models
 from app.core.exceptions import ConflictError, ProductNotFoundError, UnprocessableError
-from app.core.policies import require_product_owner_or_admin
+from app.core.policies import require_product_owner_or_permission
 from app.enums import ProductStatus
 from app.repositories.product import ProductRepository
 
@@ -32,10 +32,11 @@ def update_product(
         if product is None:
             raise ProductNotFoundError()
 
-        # Only the owner or an admin can update.
-        require_product_owner_or_admin(
+        # Only the owner or someone with product.update_any can update.
+        require_product_owner_or_permission(
             product,
             current_user,
+            "product.update_any",
         )
 
         # Prevent mass assignment of protected fields.

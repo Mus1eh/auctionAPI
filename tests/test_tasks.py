@@ -4,25 +4,10 @@ test connection. Everything is rolled back with the test's transaction."""
 from datetime import UTC, datetime, timedelta
 
 import pytest
-from sqlalchemy.orm import Session
 
 from app import models
 from app.enums import ProductStatus
 from app.worker import tasks
-
-
-@pytest.fixture
-def task_sessions(db_session, monkeypatch):
-    connection = db_session.connection()
-
-    def factory():
-        return Session(
-            bind=connection,
-            join_transaction_mode="create_savepoint",
-            autoflush=False,
-        )
-
-    monkeypatch.setattr(tasks, "sessionLocal", factory)
 
 
 @pytest.fixture
@@ -72,7 +57,7 @@ def test_outbox_with_nothing_pending(db_session, task_sessions, sent_emails):
     assert sent_emails == []
 
 
-def test_failed_email_is_marked_failed_and_not_retried(
+def test_failed_email_is_rescheduled_with_backoff_not_retried_in_same_run(
     db_session, task_sessions, monkeypatch
 ):
     emails = [queue_email(db_session, f"Mail {i}") for i in range(3)]
@@ -91,8 +76,49 @@ def test_failed_email_is_marked_failed_and_not_retried(
     # THE BROKEN EMAIL IS TRIED ONCE, NOT AGAIN ON EVERY PASS OF THE LOOP
     assert attempts == ["Mail 0", "Mail 1", "Mail 2"]
     db_session.expire_all()
-    assert [email.status for email in emails] == ["sent", "failed", "sent"]
+    assert [email.status for email in emails] == ["sent", "pending", "sent"]
+    assert emails[1].attempts == 1
+    assert emails[1].last_error == "smtp down"
+    assert emails[1].next_attempt_at > datetime.now(UTC)
     assert emails[1].sent_at is None
+
+
+def test_email_is_retried_once_its_backoff_has_passed(
+    db_session, task_sessions, sent_emails
+):
+    email = queue_email(db_session, "Retry me")
+    email.attempts = 1
+    email.next_attempt_at = datetime.now(UTC) - timedelta(seconds=1)
+    db_session.flush()
+
+    assert tasks.process_email_outbox() == {"sent": 1, "failed": 0}
+
+
+def test_email_waiting_for_backoff_is_skipped(db_session, task_sessions, sent_emails):
+    email = queue_email(db_session, "Not yet")
+    email.next_attempt_at = datetime.now(UTC) + timedelta(minutes=5)
+    db_session.flush()
+
+    assert tasks.process_email_outbox() == {"sent": 0, "failed": 0}
+    assert sent_emails == []
+
+
+def test_email_is_given_up_after_max_attempts(db_session, task_sessions, monkeypatch):
+    email = queue_email(db_session, "Doomed")
+    email.attempts = 4
+    db_session.flush()
+
+    def always_fail(**kwargs):
+        raise RuntimeError("smtp down")
+
+    monkeypatch.setattr(tasks, "send_auction_email", always_fail)
+
+    tasks.process_email_outbox()
+
+    db_session.expire_all()
+    assert email.status == "failed"
+    assert email.attempts == 5
+    assert email.next_attempt_at is None
 
 
 def test_outbox_sends_at_most_twenty_emails_per_run(

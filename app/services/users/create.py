@@ -17,11 +17,16 @@ def create_user(db: Session, request: schemas.UserCreate, user_repo: UserReposit
         raise ConflictError("Username or Email already exists.")
 
     try:
+        user_role = user_repo.get_role_by_name("user")
+
+        if not user_role:
+            raise RuntimeError("Default 'user' role does not exists.")
+
         new_user = models.User(
             username=request.username,
             email=request.email,
             password=Hash.crypt_password(request.password),
-            role_name="user",
+            roles=[user_role],
         )
 
         user_repo.create(new_user)

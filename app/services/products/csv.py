@@ -14,27 +14,31 @@ from app.core.exceptions import (
 from app.enums import ProductStatus
 from app.repositories.product import ProductRepository
 
+MAX_CSV_BYTES = 2 * 1024 * 1024  # 2 MB
 
-def import_products_csv(
-    db: Session,
-    filename: str | None,
-    file: BinaryIO,
-    repo: ProductRepository,
-    current_user: models.User,
-):
 
+def validate_csv_upload(file: BinaryIO, filename: str):
     if not filename or not filename.lower().endswith(".csv"):
         raise BadRequestError("Only csv files can be imported.")
+    content = file.read(MAX_CSV_BYTES + 1)
+
+    if len(content) > MAX_CSV_BYTES:
+        raise PayloadTooLargeError("CSV file exceeds the 2 MB size limit.")
 
     try:
-        content = file.read(2 * 1024 * 1024 + 1)
+        return content.decode("utf-8")
+    except UnicodeDecodeError:
+        raise BadRequestError("CSV must be UTF-8 encoded.")
 
-        if len(content) > 2 * 1024 * 1024:
-            raise PayloadTooLargeError("CSV file exceeds the 2 MB size limit.")
 
-        decoded_content = content.decode("utf-8")
-
-        reader = csv.DictReader(io.StringIO(decoded_content))
+def import_products_from_text(
+    db: Session,
+    text: str,
+    repo: ProductRepository,
+    owner_id: int,
+):
+    try:
+        reader = csv.DictReader(io.StringIO(text))
 
         expected_columns = {"name", "description", "start_price"}
 
@@ -63,20 +67,13 @@ def import_products_csv(
                         description=validated.description,
                         start_price=validated.start_price,
                         current_price=validated.start_price,
-                        owner_id=current_user.id,
+                        owner_id=owner_id,
                         status=ProductStatus.DRAFT,
                     )
                 )
 
             except (ValidationError, ValueError) as exc:
-                errors.append(
-                    {
-                        "row": row_number,
-                        "error": str(
-                            exc,
-                        ),
-                    }
-                )
+                errors.append({"row": row_number, "error": str(exc)})
 
         if errors:
             raise UnprocessableError(
@@ -96,9 +93,6 @@ def import_products_csv(
             "message": "Products imported successfully.",
             "imported_count": len(products),
         }
-    except UnicodeDecodeError:
-        raise BadRequestError("CSV must be UTF-8 encoded.")
-
     except Exception:
         db.rollback()
         raise

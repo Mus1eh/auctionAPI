@@ -101,6 +101,9 @@ def test_a_nul_character_is_a_422_not_a_crash(client, make_user, auth):
 
     for response in (login, register, name, description):
         assert response.status_code == 422
+
+    # THE USERNAME VALIDATOR REFUSES IT FIRST, THE REST FALL BACK TO THE DATABASE MESSAGE
+    for response in (login, name, description):
         assert response.json() == {
             "detail": "The request contains a value that cannot be stored."
         }

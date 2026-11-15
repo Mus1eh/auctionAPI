@@ -41,6 +41,7 @@ from app.core.security import Hash, create_access_token
 from app.dependencies import get_rate_limiter
 from app.enums import ProductStatus
 from app.main import app
+from app.seeders.rbac import PERMISSIONS, ROLE_PERMISSIONS, ROLES
 
 engine = create_engine(TEST_DATABASE_URL)
 
@@ -118,9 +119,19 @@ def client(db_session):
 
 @pytest.fixture
 def roles(db_session):
-    for name in ("user", "admin", "superadmin"):
-        if not db_session.query(models.Role).filter_by(name=name).first():
-            db_session.add(models.Role(name=name))
+    """Roles, permissions and their links, exactly as the seeder defines them."""
+    permissions = {}
+    for name in PERMISSIONS:
+        permission = db_session.query(models.Permission).filter_by(name=name).first()
+        permissions[name] = permission or models.Permission(name=name)
+        db_session.add(permissions[name])
+
+    for role_name in ROLES:
+        role = db_session.query(models.Role).filter_by(name=role_name).first()
+        if not role:
+            role = models.Role(name=role_name)
+            db_session.add(role)
+        role.permissions = [permissions[n] for n in ROLE_PERMISSIONS[role_name]]
     db_session.flush()
 
 
@@ -132,13 +143,53 @@ def make_user(db_session, roles):
             username=f"u_{ident}",
             email=f"pytest_{uuid4().hex}@example.com",
             password=Hash.crypt_password(password),
-            role_name=role,
         )
+        user.roles.append(db_session.query(models.Role).filter_by(name=role).one())
         db_session.add(user)
         db_session.flush()
         return user
 
     return create
+
+
+@pytest.fixture
+def task_sessions(db_session, monkeypatch):
+    """Celery tasks open their own sessions; point them at the test transaction."""
+    from app.worker import tasks
+
+    connection = db_session.connection()
+
+    def factory():
+        return Session(
+            bind=connection,
+            join_transaction_mode="create_savepoint",
+            autoflush=False,
+        )
+
+    monkeypatch.setattr(tasks, "sessionLocal", factory)
+
+
+@pytest.fixture
+def eager_celery(task_sessions):
+    """Run queued tasks inline and keep their results in memory, so no Redis is needed."""
+    from app.worker.celery_app import celery_app
+
+    previous = {
+        key: celery_app.conf[key]
+        for key in ("task_always_eager", "task_store_eager_result", "result_backend")
+    }
+    previous_backend = getattr(celery_app._local, "backend", None)
+    celery_app.conf.update(
+        task_always_eager=True,
+        task_store_eager_result=True,
+        result_backend="cache+memory://",
+    )
+    celery_app._local.backend = None
+    try:
+        yield celery_app
+    finally:
+        celery_app.conf.update(previous)
+        celery_app._local.backend = previous_backend
 
 
 @pytest.fixture

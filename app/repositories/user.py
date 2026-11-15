@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 
 from sqlalchemy import or_
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app import models
 
@@ -19,10 +19,22 @@ class UserRepository:
         return query
 
     def get_by_id(self, user_id: int):
-        return self._query().filter(models.User.id == user_id).first()
+        return (
+            self._query()
+            .options(selectinload(models.User.roles))
+            .filter(models.User.id == user_id)
+            .first()
+        )
 
     def get_by_username(self, username: str):
-        return self._query().filter(models.User.username == username).first()
+        return (
+            self._query()
+            .options(
+                selectinload(models.User.roles).selectinload(models.Role.permissions)
+            )
+            .filter(models.User.username == username)
+            .first()
+        )
 
     def get_by_email(self, email: str):
         return self._query().filter(models.User.email == email).first()
@@ -35,8 +47,18 @@ class UserRepository:
     def get_role_by_name(self, role_name: str):
         return self.db.query(models.Role).filter(models.Role.name == role_name).first()
 
-    def update_role(self, user: models.User, role: models.Role):
-        user.role_name = role.name
+    def has_role(self, user: models.User, role_name: str) -> bool:
+        return any(role.name == role_name for role in user.roles)
+
+    def assign_role(self, user: models.User, role: models.Role):
+        if not self.has_role(user, role.name):
+            user.roles.append(role)
+        self.db.flush()
+        return user
+
+    def remove_role(self, user: models.User, role: models.Role):
+        if self.has_role(user, role.name):
+            user.roles.remove(role)
         self.db.flush()
         return user
 

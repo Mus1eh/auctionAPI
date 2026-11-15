@@ -20,9 +20,6 @@ def change_user_role(
     user_repo: UserRepository,
 ):
     try:
-        if not is_superadmin(current_user):
-            raise ForbiddenError("You do not have permission to change user roles.")
-
         if request.role_name not in ["admin", "user"]:
             raise BadRequestError("Only user and admin roles can be assigned.")
 
@@ -34,19 +31,19 @@ def change_user_role(
         if is_superadmin(user):
             raise ForbiddenError("You cannot change the role of a superadmin.")
 
-        if user.role_name == request.role_name:
-            raise ConflictError("The user already has this role.")
-
         role = user_repo.get_role_by_name(request.role_name)
 
         if not role:
             raise NotFoundError("Role is not found.")
 
-        new_user_role = user_repo.update_role(user, role)
+        if user_repo.has_role(user, role.name):
+            raise ConflictError("This user already has the specified role.")
+
+        updated_user = user_repo.assign_role(user, role)
 
         db.commit()
-        db.refresh(new_user_role)
-        return new_user_role
+        db.refresh(updated_user)
+        return updated_user
 
     except Exception:
         db.rollback()

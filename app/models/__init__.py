@@ -6,7 +6,9 @@ from app.models.product import Product
 from app.models.product_status_request import ProductStatusRequest
 from app.models.refresh_token import RefreshToken
 from app.models.role import Role
+from app.models.role_permission import role_permissions
 from app.models.user import User
+from app.models.user_role import user_roles
 
 __all__ = [
     "Bids",
@@ -18,4 +20,6 @@ __all__ = [
     "RefreshToken",
     "Role",
     "User",
+    "role_permissions",
+    "user_roles",
 ]

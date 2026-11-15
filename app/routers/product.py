@@ -1,8 +1,12 @@
+from uuid import uuid4
+
+from celery.result import AsyncResult
 from fastapi import APIRouter, Depends, File, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app import models, schemas
 from app.core.database import get_db
+from app.core.exceptions import NotFoundError
 from app.dependencies import (
     get_pagination,
     get_product_repo,
@@ -14,9 +18,7 @@ from app.repositories.product import ProductRepository
 from app.repositories.product_status_request import ProductStatusRequestRepository
 from app.schemas.pagination import Page, Pagination
 from app.services.products.create import create_product as create_product_service
-from app.services.products.csv import (
-    import_products_csv as import_products_csv_service,
-)
+from app.services.products.csv import validate_csv_upload
 from app.services.products.delete import delete_product as delete_product_service
 from app.services.products.get import get_by_status as get_by_status_service
 from app.services.products.get import get_my_product as get_my_product_service
@@ -26,6 +28,8 @@ from app.services.products.status_change import (
     request_status_change as request_status_change_service,
 )
 from app.services.products.update import update_product as update_product_service
+from app.worker.celery_app import celery_app
+from app.worker.tasks import import_products_csv_task
 
 router = APIRouter(
     prefix="/products",
@@ -222,20 +226,38 @@ def restore_product_to_draft(
     # WHERE approval_status = 'pending'; -----> ALSO WE HAVE THE 409 CONFLICT SO WE GOT 2 LAYERS OF PROTECTION AGAINST MULTIPLE PENDING REQUESTS
 
 
-@router.post("/import-csv", status_code=status.HTTP_201_CREATED)
+@router.post("/import-csv", status_code=status.HTTP_202_ACCEPTED)
 def import_products_csv(
     file: UploadFile = File(...),
-    db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
-    repo: ProductRepository = Depends(get_product_repo),
 ):
     try:
-        return import_products_csv_service(
-            db=db,
-            repo=repo,
-            filename=file.filename,
-            file=file.file,
-            current_user=current_user,
-        )
+        text = validate_csv_upload(file.file, file.filename)
+
     finally:
         file.file.close()
+
+    task_id = f"csv-{current_user.id}-{uuid4()}"
+
+    import_products_csv_task.apply_async(args=[text, current_user.id], task_id=task_id)
+
+    return {"task_id": task_id}
+
+
+@router.get("/import-csv/{task_id}")
+def get_import_csv_status(
+    task_id: str,
+    current_user: models.User = Depends(get_current_user),
+):
+    if not task_id.startswith(f"csv-{current_user.id}-"):
+        raise NotFoundError("Import Task not found")
+
+    result = AsyncResult(task_id, app=celery_app)
+
+    if result.state == "SUCCESS":
+        return result.result
+
+    if result.state == "FAILURE":
+        return {"status": "error", "detail": "Import failed unexpectedly."}
+
+    return {"status": "processing"}

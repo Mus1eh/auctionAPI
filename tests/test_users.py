@@ -31,7 +31,7 @@ def test_register_user(client, roles, db_session):
     # Validate the database record
     saved = db_session.query(models.User).filter_by(username=payload["username"]).one()
 
-    assert saved.role_name == "user"
+    assert {role.name for role in saved.roles} == {"user"}
     assert saved.password != payload["password"]
 
 
@@ -67,7 +67,7 @@ def test_username_cannot_contain_at_sign(client):
         },
     )
     assert response.status_code == 422
-    assert "Username cannot contain '@'" in response.json()["detail"][0]["msg"]
+    assert "Invalid username." in response.json()["detail"][0]["msg"]
 
 
 def test_get_user_requires_admin(client, make_user, auth):

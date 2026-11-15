@@ -30,6 +30,10 @@ class Settings(BaseSettings):
 
     rate_limit_storage: str
 
+    celery_broker_url: str = "redis://localhost:6379/0"
+    celery_result_backend: str = "redis://localhost:6379/1"
+    celery_result_expires: int = 3600
+
 
 # Kept apart so the API can start without the seed accounts' credentials.
 class SeedSettings(BaseSettings):

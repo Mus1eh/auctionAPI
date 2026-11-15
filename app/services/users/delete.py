@@ -7,7 +7,7 @@ from app.core.exceptions import (
     PermissionDeniedError,
     UserNotFoundError,
 )
-from app.core.policies import is_admin, is_superadmin
+from app.core.policies import has_permission, is_superadmin
 from app.enums import ProductStatus
 from app.repositories.authentication import AuthenticationRepository
 from app.repositories.product import ProductRepository
@@ -93,10 +93,10 @@ def delete_user_by_id(
         allowed = False
     elif is_self:
         allowed = True
-    elif user_to_delete.role_name == "admin":
-        allowed = is_superadmin(current_user)
-    elif user_to_delete.role_name == "user":
-        allowed = is_admin(current_user)
+    elif user_repo.has_role(user_to_delete, "admin"):
+        allowed = has_permission(current_user, "user.delete_admin")
+    elif user_repo.has_role(user_to_delete, "user"):
+        allowed = has_permission(current_user, "user.delete")
 
     if not allowed:
         raise PermissionDeniedError()

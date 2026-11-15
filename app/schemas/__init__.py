@@ -19,7 +19,7 @@ from app.schemas.product import (
 from app.schemas.product_status import ProductStatusRequestShow
 from app.schemas.role import UserRoleUpdate
 from app.schemas.token import LogoutRequest, RefreshTokenRequest, Token
-from app.schemas.user import UserCreate, UserShow
+from app.schemas.user import UserCreate, UserDetail, UserMe, UserShow
 
 __all__ = [
     "BidCreate",
@@ -39,6 +39,8 @@ __all__ = [
     "ResetPasswordToken",
     "Token",
     "UserCreate",
+    "UserDetail",
+    "UserMe",
     "UserRoleUpdate",
     "UserShow",
 ]
