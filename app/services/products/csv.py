@@ -34,7 +34,7 @@ def validate_csv_upload(file: BinaryIO, filename: str):
 def import_products_from_text(
     db: Session,
     text: str,
-    repo: ProductRepository,
+    product_repo: ProductRepository,
     owner_id: int,
 ):
     try:
@@ -86,7 +86,7 @@ def import_products_from_text(
         if not products:
             raise BadRequestError("CSV contain no product")
 
-        repo.create_bulk(products)
+        product_repo.create_bulk(products)
         db.commit()
 
         return {

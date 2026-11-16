@@ -67,9 +67,7 @@ def restore_user(
     # Locked, so two requests with the same token cannot both restore.
     user = user_repo.get_by_id_for_restore(db_token.user_id)
     if not user:
-        raise InvalidResetTokenError(
-            token_error_message(ACCOUNT_RESTORE, "invalid")
-        )
+        raise InvalidResetTokenError(token_error_message(ACCOUNT_RESTORE, "invalid"))
 
     try:
         if auth_repo.password_reset_token_update(db_token) != 1:
