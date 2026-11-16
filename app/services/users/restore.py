@@ -12,6 +12,7 @@ from app.repositories.user import UserRepository
 from app.services.authentication.reset_tokens import (
     ACCOUNT_RESTORE,
     create_password_reset_token,
+    token_error_message,
     verify_password_reset_token,
 )
 
@@ -36,7 +37,6 @@ def request_user_restore(
             token = create_password_reset_token(
                 auth_repo, int(user.id), ACCOUNT_RESTORE
             )
-            # Queued in the outbox, so the response does not wait on SMTP.
             outbox_repo.create(
                 to_email=user.email,
                 subject="Account Restore Request",
@@ -67,11 +67,15 @@ def restore_user(
     # Locked, so two requests with the same token cannot both restore.
     user = user_repo.get_by_id_for_restore(db_token.user_id)
     if not user:
-        raise InvalidResetTokenError()
+        raise InvalidResetTokenError(
+            token_error_message(ACCOUNT_RESTORE, "invalid")
+        )
 
     try:
         if auth_repo.password_reset_token_update(db_token) != 1:
-            raise ResetTokenAlreadyUsedError()
+            raise ResetTokenAlreadyUsedError(
+                token_error_message(ACCOUNT_RESTORE, "used")
+            )
 
         user_repo.restore(user)
         auth_repo.revoke_all_password_reset_token_by_user_id(int(user.id))

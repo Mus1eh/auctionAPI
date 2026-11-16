@@ -8,6 +8,7 @@ import { AccountPage } from '@/pages/AccountPage'
 import { AdminPage } from '@/pages/admin/AdminPage'
 import { ForgotPasswordPage } from '@/pages/auth/ForgotPasswordPage'
 import { LoginPage } from '@/pages/auth/LoginPage'
+import { RequestRestorePage } from '@/pages/auth/RequestRestorePage'
 import { RegisterPage } from '@/pages/auth/RegisterPage'
 import { ResetPasswordPage } from '@/pages/auth/ResetPasswordPage'
 import { EditProductPage } from '@/pages/EditProductPage'
@@ -15,6 +16,7 @@ import { MarketplacePage } from '@/pages/MarketplacePage'
 import { MyListingsPage } from '@/pages/MyListingsPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 import { ProductDetailPage } from '@/pages/ProductDetailPage'
+import { RestoreAccountPage } from '@/pages/auth/RestoreAccountPage'
 import { SellPage } from '@/pages/SellPage'
 
 export function AppRoutes() {
@@ -27,6 +29,8 @@ export function AppRoutes() {
         <Route path="register" element={<RedirectIfAuthenticated><RegisterPage /></RedirectIfAuthenticated>} />
         <Route path="forgot-password" element={<ForgotPasswordPage />} />
         <Route path="reset-password" element={<ResetPasswordPage />} />
+        <Route path="restore-request" element={<RequestRestorePage />} />
+        <Route path="restore-account" element={<RestoreAccountPage />} />
         <Route element={<RequireAuth />}>
           <Route path="sell" element={<SellPage />} />
           <Route path="products/:id/edit" element={<EditProductPage />} />

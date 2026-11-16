@@ -43,6 +43,10 @@ export function LoginPage() {
           <Link to={`/register${location.search}`} className="font-medium text-brand-700 hover:underline">
             Create an account
           </Link>
+          <span className="mx-1.5 text-stone-300">·</span>
+          <Link to="/restore-request" className="font-medium text-brand-700 hover:underline">
+            Restore a deleted account
+          </Link>
         </>
       }
     >

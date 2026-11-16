@@ -72,6 +72,18 @@ export const authApi = {
 };
 
 export const usersApi = {
+  requestRestore(email: string) {
+    return apiRequest<{ message: string }>("/users/restore-request", {
+      method: "POST",
+      json: { email },
+    });
+  },
+  restore(token: string) {
+    return apiRequest<{ message: string }>("/users/restore", {
+      method: "POST",
+      json: { token },
+    });
+  },
   register(data: UserCreate) {
     return apiRequest<User>("/users/", { method: "POST", json: data });
   },

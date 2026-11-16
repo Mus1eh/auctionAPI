@@ -54,7 +54,6 @@ def send_password_reset_email(to_email: str, reset_token: str):
 
 
 def send_auction_email(to_email: str, subject: str, body: str) -> None:
-    # send email using SMTP with given subject and body from templates
     message = EmailMessage()
 
     message["From"] = settings.smtp_from_email

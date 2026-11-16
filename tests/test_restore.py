@@ -135,7 +135,7 @@ def test_confirm_token_works_once(client, db_session, deleted_user):
     again = confirm(client, raw)
 
     assert again.status_code == 400
-    assert again.json() == {"detail": "Password reset token has already been used"}
+    assert again.json() == {"detail": "Account restore token has already been used"}
 
 
 def test_confirm_rejects_expired_token(client, db_session, deleted_user):
@@ -144,12 +144,16 @@ def test_confirm_rejects_expired_token(client, db_session, deleted_user):
     response = confirm(client, raw)
 
     assert response.status_code == 400
+    assert response.json() == {"detail": "Account restore token has expired"}
     db_session.expire_all()
     assert deleted_user.deleted_at is not None
 
 
 def test_confirm_rejects_unknown_token(client):
-    assert confirm(client, "nope").status_code == 400
+    response = confirm(client, "nope")
+
+    assert response.status_code == 400
+    assert response.json() == {"detail": "Invalid account restore token"}
 
 
 def test_confirm_rejects_a_password_reset_token(client, db_session, deleted_user):
