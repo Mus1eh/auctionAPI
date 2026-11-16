@@ -5,6 +5,9 @@ from sqlalchemy.orm import Session
 
 from app import models
 
+"""Repository are for database operations.
+including crud, query, and other database operations."""
+
 
 class AuthenticationRepository:
     def __init__(self, db: Session):
@@ -94,22 +97,25 @@ class AuthenticationRepository:
         )
 
     def create_password_reset_token(
-        self, user_id: int, token_hash: str, expires_at: datetime
+        self, user_id: int, token_hash: str, expires_at: datetime, purpose: str
     ):
         db_token = models.PasswordResetToken(
             user_id=user_id,
             token_hash=token_hash,
             expires_at=expires_at,
+            purpose=purpose,
         )
         self.db.add(db_token)
         self.db.flush()
         return db_token
 
-    def get_password_reset_token_by_hash(self, token_hash: str):
+    def get_password_reset_token_by_hash(self, token_hash: str, purpose: str):
+        # the purpose is part of the lookup, so a token of one kind is "not found" for the other
         return (
             self.db.query(models.PasswordResetToken)
             .filter(
                 models.PasswordResetToken.token_hash == token_hash,
+                models.PasswordResetToken.purpose == purpose,
             )
             .first()
         )

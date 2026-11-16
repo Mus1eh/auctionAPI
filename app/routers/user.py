@@ -3,15 +3,19 @@ from sqlalchemy.orm import Session
 
 from app import models, schemas
 from app.core.database import get_db
+from app.core.rate_limit import RateLimiter
 from app.dependencies import (
     get_auth_repo,
+    get_email_outbox_repo,
     get_product_repo,
     get_product_status_request_repo,
+    get_rate_limiter,
     get_user_repo,
     limit_by_ip,
 )
 from app.oauth2 import get_current_user
 from app.repositories.authentication import AuthenticationRepository
+from app.repositories.email_outbox import EmailOutboxRepository
 from app.repositories.product import ProductRepository
 from app.repositories.product_status_request import ProductStatusRequestRepository
 from app.repositories.user import UserRepository
@@ -19,6 +23,10 @@ from app.services.users.create import create_user as create_user_service
 from app.services.users.delete import delete_my_account as delete_my_account_service
 from app.services.users.delete import delete_user_by_id as delete_user_by_id_service
 from app.services.users.get import get_user_by_id as get_user_by_id_service
+from app.services.users.restore import (
+    request_user_restore as request_user_restore_service,
+)
+from app.services.users.restore import restore_user as restore_user_service
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -98,4 +106,47 @@ def delete_user(
         auth_repo=auth_repo,
         product_repo=product_repo,
         status_repo=status_repo,
+    )
+
+
+@router.post(
+    "/restore-request",
+    status_code=status.HTTP_202_ACCEPTED,
+    dependencies=[Depends(limit_by_ip("restore-request", "10/hour"))],
+)
+def request_account_restore(
+    request: schemas.UserRestore,
+    db: Session = Depends(get_db),
+    user_repo: UserRepository = Depends(get_user_repo),
+    auth_repo: AuthenticationRepository = Depends(get_auth_repo),
+    outbox_repo: EmailOutboxRepository = Depends(get_email_outbox_repo),
+    limiter: RateLimiter = Depends(get_rate_limiter),
+):
+    return request_user_restore_service(
+        db=db,
+        request=request,
+        user_repo=user_repo,
+        auth_repo=auth_repo,
+        outbox_repo=outbox_repo,
+        limiter=limiter,
+    )
+
+
+@router.post(
+    "/restore",
+    dependencies=[Depends(limit_by_ip("restore", "10/hour"))],
+)
+def restore_account(
+    request: schemas.UserRestoreConfirm,
+    db: Session = Depends(get_db),
+    user_repo: UserRepository = Depends(get_user_repo),
+    auth_repo: AuthenticationRepository = Depends(get_auth_repo),
+    outbox_repo: EmailOutboxRepository = Depends(get_email_outbox_repo),
+):
+    return restore_user_service(
+        db=db,
+        request=request,
+        user_repo=user_repo,
+        auth_repo=auth_repo,
+        outbox_repo=outbox_repo,
     )

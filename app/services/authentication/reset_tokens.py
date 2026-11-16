@@ -10,9 +10,14 @@ from app.core.exceptions import (
 from app.repositories.authentication import AuthenticationRepository
 from app.services.authentication.refresh_tokens import hash_token
 
+PASSWORD_RESET = "password_reset"
+ACCOUNT_RESTORE = "account_restore"
+
 
 def create_password_reset_token(
-    auth_repo: AuthenticationRepository, user_id: int
+    auth_repo: AuthenticationRepository,
+    user_id: int,
+    purpose: str = PASSWORD_RESET,
 ) -> str:
     token = secrets.token_urlsafe(32)
 
@@ -20,12 +25,18 @@ def create_password_reset_token(
         minutes=settings.reset_password_token_expire_minutes,
     )
 
-    auth_repo.create_password_reset_token(user_id, hash_token(token), expires_at)
+    auth_repo.create_password_reset_token(
+        user_id, hash_token(token), expires_at, purpose
+    )
     return token
 
 
-def verify_password_reset_token(auth_repo: AuthenticationRepository, token: str):
-    db_token = auth_repo.get_password_reset_token_by_hash(hash_token(token))
+def verify_password_reset_token(
+    auth_repo: AuthenticationRepository,
+    token: str,
+    purpose: str = PASSWORD_RESET,
+):
+    db_token = auth_repo.get_password_reset_token_by_hash(hash_token(token), purpose)
 
     if not db_token:
         raise InvalidResetTokenError()

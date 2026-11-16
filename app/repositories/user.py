@@ -26,6 +26,21 @@ class UserRepository:
             .first()
         )
 
+    def get_by_email_for_restore(self, email: str):
+        return (
+            self._query(include_deleted=True)
+            .filter(models.User.deleted_at.is_not(None), models.User.email == email)
+            .first()
+        )
+
+    def get_by_id_for_restore(self, user_id: int):
+        return (
+            self._query(include_deleted=True)
+            .filter(models.User.deleted_at.is_not(None), models.User.id == user_id)
+            .with_for_update()
+            .first()
+        )
+
     def get_by_username(self, username: str):
         return (
             self._query()
@@ -64,6 +79,11 @@ class UserRepository:
 
     def softdelete(self, user: models.User):
         user.deleted_at = datetime.now(UTC)
+        self.db.flush()
+        return user
+
+    def restore(self, user: models.User):
+        user.deleted_at = None
         self.db.flush()
         return user
 

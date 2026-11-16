@@ -35,6 +35,14 @@ class UserShow(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class UserRestore(BaseModel):
+    email: EmailStr = Field(max_length=EMAIL_MAX)
+
+
+class UserRestoreConfirm(BaseModel):
+    token: str = Field(min_length=1, max_length=256)
+
+
 class UserDetail(UserShow):
     roles: list[str]
 

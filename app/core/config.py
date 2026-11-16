@@ -35,7 +35,7 @@ class Settings(BaseSettings):
     celery_result_expires: int = 3600
 
 
-# Kept apart so the API can start without the seed accounts' credentials.
+# Kept apart so the API can start without the seed accounts credentials.
 class SeedSettings(BaseSettings):
     model_config = SettingsConfigDict(env_file=ENV_FILE, extra="ignore")
 

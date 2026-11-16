@@ -10,6 +10,7 @@ from app.models.role_permission import role_permissions
 from app.models.user import User
 from app.models.user_role import user_roles
 
+# this file is used to import all models so they can be easily imported.
 __all__ = [
     "Bids",
     "EmailOutbox",

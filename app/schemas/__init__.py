@@ -19,8 +19,16 @@ from app.schemas.product import (
 from app.schemas.product_status import ProductStatusRequestShow
 from app.schemas.role import UserRoleUpdate
 from app.schemas.token import LogoutRequest, RefreshTokenRequest, Token
-from app.schemas.user import UserCreate, UserDetail, UserMe, UserShow
+from app.schemas.user import (
+    UserCreate,
+    UserDetail,
+    UserMe,
+    UserRestore,
+    UserRestoreConfirm,
+    UserShow,
+)
 
+# this file is used to import all schemas so they can be easily imported.
 __all__ = [
     "BidCreate",
     "BidShow",
@@ -41,6 +49,8 @@ __all__ = [
     "UserCreate",
     "UserDetail",
     "UserMe",
+    "UserRestore",
+    "UserRestoreConfirm",
     "UserRoleUpdate",
     "UserShow",
 ]

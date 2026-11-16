@@ -5,11 +5,18 @@ from email.message import EmailMessage
 from app.core.config import settings
 
 
-def generate_link(reset_token: str) -> str:
+def generate_password_reset_link(reset_token: str) -> str:
+    # generate password reset link
     return f"{settings.frontend_url}/reset-password?token={reset_token}"
 
 
+def generate_user_restore_link(reset_token: str) -> str:
+    # generate user restore link
+    return f"{settings.frontend_url}/restore-account?token={reset_token}"
+
+
 def send_password_reset_email(to_email: str, reset_token: str):
+    # send password reset email with reset token using SMTP
     message = EmailMessage()
 
     message["Subject"] = "Password Reset Request"
@@ -18,18 +25,18 @@ def send_password_reset_email(to_email: str, reset_token: str):
 
     message.set_content(
         f"""
-    Hello, 
+    Hello,
 
     You requested to reset your password.
 
-    Your password reset token is: 
+    Your password reset token is:
 
-    {generate_link(reset_token)}
+    {generate_password_reset_link(reset_token)}
 
     This token will expire in 15 minutes.
 
     if you did not request this, please ignore this email.
-    
+
     """
     )
 
@@ -47,6 +54,7 @@ def send_password_reset_email(to_email: str, reset_token: str):
 
 
 def send_auction_email(to_email: str, subject: str, body: str) -> None:
+    # send email using SMTP with given subject and body from templates
     message = EmailMessage()
 
     message["From"] = settings.smtp_from_email

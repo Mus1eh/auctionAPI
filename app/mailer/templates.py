@@ -1,4 +1,5 @@
 def owner_auction_closed_email(auction: dict) -> str:
+    # email content for product owner when their auction has ended
     return f"""
 Hello,
 
@@ -23,6 +24,7 @@ Auction API Team
 
 
 def highest_bidder_email(auction: dict) -> str:
+    # email content for highest bidder when they win the auction
     return f"""
 Hello {auction["highest_bidder_username"]},
 
@@ -41,6 +43,7 @@ Auction API Team
 
 
 def bid_approved_email(product, bidder) -> str:
+    # email content for bidder when their bid is approved by the product owner
     return f"""
 Hello {bidder.username},
 
@@ -57,6 +60,7 @@ Auction API Team
 
 
 def bid_rejected_email(product, bidder) -> str:
+    # email content for bidder when their bid is rejected by the product owner
     return f"""
 Hello {bidder.username},
 
@@ -69,6 +73,38 @@ Product Name: {product.name}
 Your Offer: {product.current_price}
 
 Thank you for participating.
+
+Auction API Team
+"""
+
+
+def account_restore_request_email(user, link: str, expire_minutes: int) -> str:
+    # email content with the restore link for a deleted account
+    return f"""
+Hello {user.username},
+
+You requested to restore your account.
+
+Use this link to restore it:
+
+{link}
+
+This link will expire in {expire_minutes} minutes.
+
+If you did not request this, please ignore this email.
+
+Auction API Team
+"""
+
+
+def restore_user_email(user) -> str:
+    # email content confirming the account was restored
+    return f"""
+Hello {user.username},
+
+Your account has been restored. You can log in again.
+
+If this was not you, please reset your password right away.
 
 Auction API Team
 """

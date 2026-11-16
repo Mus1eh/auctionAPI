@@ -47,7 +47,6 @@ class EmailOutboxRepository:
         return email
 
     def mark_failed(self, email: models.EmailOutbox, error: str):
-        """Schedule a retry with exponential backoff, or give up for good."""
         email.attempts += 1
         email.last_error = error[:1000]
 
